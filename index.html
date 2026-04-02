@@ -270,6 +270,9 @@
       gap: 12px;
       overflow-y: auto;
       min-height: 0;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
     }
 
     .message {
@@ -573,9 +576,12 @@
       .chat-shell {
         width: 100%;
         max-height: 100vh;
+        height: 100dvh;
         border-radius: 0;
         border: none;
         box-shadow: none;
+        display: flex;
+        flex-direction: column;
       }
 
       body {
@@ -602,6 +608,8 @@
       .room {
         grid-template-columns: 1fr;
         min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 140px);
+        flex: 1;
+        min-height: 0;
       }
 
       .sidebar {
@@ -654,6 +662,10 @@
         padding: 12px;
         gap: 10px;
         padding-bottom: 84px;
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
       }
 
       .message {
@@ -685,9 +697,8 @@
         align-items: stretch;
         padding-bottom: max(8px, env(safe-area-inset-bottom));
         border-radius: 0;
-        position: sticky;
-        bottom: 0;
         z-index: 20;
+        flex: 0 0 auto;
       }
 
       .composer textarea {
@@ -785,6 +796,7 @@
 
       .room {
         min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 120px);
+        min-height: 0;
       }
 
       .sidebar {
@@ -799,6 +811,7 @@
       .messages {
         padding: 10px;
         gap: 8px;
+        padding-bottom: 76px;
       }
 
       .message {

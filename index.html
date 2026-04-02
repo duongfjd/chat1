@@ -119,6 +119,66 @@
       background: #fff4f7;
     }
 
+    .presence-info {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.75rem;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      color: var(--text);
+      background: #f8fbf5;
+      white-space: nowrap;
+      min-width: 100px;
+    }
+
+    .presence-info.active {
+      border-color: #1f9f4f66;
+      background: #efffed;
+    }
+
+    .typing-indicator {
+      position: fixed;
+      bottom: 60px;
+      left: 20px;
+      right: 20px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      padding: 8px 12px;
+      background: #f8fbf5;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      display: none;
+      z-index: 10;
+      animation: slideUp 200ms ease-out;
+    }
+
+    .typing-indicator.show {
+      display: block;
+    }
+
+    .typing-dot {
+      display: inline-block;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-left: 3px;
+      animation: bounce 1.4s infinite;
+    }
+
+    .typing-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes bounce {
+      0%, 60%, 100% { opacity: 0.4; }
+      30% { opacity: 1; }
+    }
+
     .room {
       display: grid;
       grid-template-columns: 250px 1fr;
@@ -753,6 +813,7 @@
         <h1>Supabase Realtime Chat</h1>
         <p>Single HTML file, no custom backend.</p>
       </div>
+      <div id="presence" class="presence-info">online: 0</div>
       <div id="status" class="status">connecting...</div>
     </header>
 
@@ -942,6 +1003,13 @@ using (true);</pre>
     </section>
   </main>
 
+  <div id="typingIndicator" class="typing-indicator">
+    <span id="typingText"></span>
+    <span class="typing-dot"></span>
+    <span class="typing-dot"></span>
+    <span class="typing-dot"></span>
+  </div>
+
   <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
@@ -967,9 +1035,13 @@ using (true);</pre>
     const uploadStatusEl = document.getElementById("uploadStatus");
     const progressWrapperEl = document.getElementById("progressWrapper");
     const progressBarEl = document.getElementById("progressBar");
+    const presenceEl = document.getElementById("presence");
+    const typingIndicatorEl = document.getElementById("typingIndicator");
+    const typingTextEl = document.getElementById("typingText");
 
     const renderedIds = new Set();
     const messageReactions = {};
+    const presenceUsers = {};
     let currentRoom = "general";
     let hasRoomColumn = true;
     let hasUsernameColumn = true;
@@ -1214,6 +1286,46 @@ using (true);</pre>
         toast.style.opacity = "0";
         setTimeout(() => toast.remove(), 300);
       }, 1500);
+    };
+
+    const updatePresenceInfo = () => {
+      const count = Object.keys(presenceUsers).length;
+      presenceEl.textContent = `online: ${count}`;
+      presenceEl.classList.toggle("active", count > 0);
+    };
+
+    const updateTypingIndicator = () => {
+      const typingUsers = Object.values(presenceUsers)
+        .filter((u) => u.typing && u.username !== (usernameEl.value.trim() || "guest"))
+        .map((u) => u.username);
+
+      if (typingUsers.length === 0) {
+        typingIndicatorEl.classList.remove("show");
+        return;
+      }
+
+      const names = typingUsers.join(", ");
+      const text =
+        typingUsers.length === 1
+          ? `${names} is typing`
+          : `${typingUsers.length} people typing`;
+
+      typingTextEl.textContent = text;
+      typingIndicatorEl.classList.add("show");
+    };
+
+    let typingTimeout = null;
+    let presenceChannel = null;
+
+    const broadcastTyping = async (isTyping) => {
+      if (!presenceChannel) return;
+      const username = usernameEl.value.trim() || "guest";
+      presenceChannel.track({
+        username,
+        room: currentRoom,
+        typing: isTyping,
+        online_at: new Date().toISOString()
+      });
     };
 
     const copyMessageContent = (messageEl) => {
@@ -1532,6 +1644,58 @@ using (true);</pre>
       localStorage.setItem("chat_room", currentRoom);
       setRoomSubtitle();
       clearMessages();
+
+      if (presenceChannel) {
+        await supabase.removeChannel(presenceChannel);
+      }
+
+      presenceUsers.clear();
+      updatePresenceInfo();
+      updateTypingIndicator();
+
+      presenceChannel = supabase.channel(`chat-presence:${currentRoom}`, {
+        config: {
+          broadcast: { ack: true },
+          presence: { key: clientUserId }
+        }
+      });
+
+      presenceChannel.on("presence", { event: "sync" }, () => {
+        presenceUsers.clear();
+        Object.entries(presenceChannel.presenceState()).forEach(([key, states]) => {
+          if (Array.isArray(states) && states[0]) {
+            const user = states[0];
+            if (user.room === currentRoom) {
+              presenceUsers[key] = user;
+            }
+          }
+        });
+        updatePresenceInfo();
+        updateTypingIndicator();
+      });
+
+      presenceChannel.on("presence", { event: "join" }, () => {
+        updatePresenceInfo();
+        updateTypingIndicator();
+      });
+
+      presenceChannel.on("presence", { event: "leave" }, () => {
+        updatePresenceInfo();
+        updateTypingIndicator();
+      });
+
+      await presenceChannel.subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          const username = usernameEl.value.trim() || "guest";
+          await presenceChannel.track({
+            username,
+            room: currentRoom,
+            typing: false,
+            online_at: new Date().toISOString()
+          });
+        }
+      });
+
       await loadInitialMessages();
     };
 
@@ -1555,6 +1719,20 @@ using (true);</pre>
     fileInputEl.addEventListener("change", async () => {
       const file = fileInputEl.files && fileInputEl.files[0];
       await uploadAndSendFile(file);
+    });
+
+    messageInputEl.addEventListener("input", () => {
+      const hasText = messageInputEl.value.trim().length > 0;
+
+      if (hasText) {
+        broadcastTyping(true);
+        if (typingTimeout) clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+          broadcastTyping(false);
+        }, 1500);
+      } else {
+        broadcastTyping(false);
+      }
     });
 
     messagesEl.addEventListener("dragover", (e) => {
@@ -1618,6 +1796,49 @@ using (true);</pre>
       messageInputEl.focus();
     });
 
+    presenceChannel = supabase.channel(`chat-presence:${currentRoom}`, {
+      config: {
+        broadcast: { ack: true },
+        presence: { key: clientUserId }
+      }
+    });
+
+    presenceChannel.on("presence", { event: "sync" }, () => {
+      presenceUsers.clear();
+      Object.entries(presenceChannel.presenceState()).forEach(([key, states]) => {
+        if (Array.isArray(states) && states[0]) {
+          const user = states[0];
+          if (user.room === currentRoom) {
+            presenceUsers[key] = user;
+          }
+        }
+      });
+      updatePresenceInfo();
+      updateTypingIndicator();
+    });
+
+    presenceChannel.on("presence", { event: "join" }, () => {
+      updatePresenceInfo();
+      updateTypingIndicator();
+    });
+
+    presenceChannel.on("presence", { event: "leave" }, () => {
+      updatePresenceInfo();
+      updateTypingIndicator();
+    });
+
+    presenceChannel.subscribe(async (status) => {
+      if (status === "SUBSCRIBED") {
+        const username = usernameEl.value.trim() || "guest";
+        await presenceChannel.track({
+          username,
+          room: currentRoom,
+          typing: false,
+          online_at: new Date().toISOString()
+        });
+      }
+    });
+
     const channel = supabase
       .channel("realtime-chat-room")
       .on(
@@ -1641,6 +1862,9 @@ using (true);</pre>
 
     window.addEventListener("beforeunload", async () => {
       await supabase.removeChannel(channel);
+      if (presenceChannel) {
+        await supabase.removeChannel(presenceChannel);
+      }
     });
 
     clearMessages();

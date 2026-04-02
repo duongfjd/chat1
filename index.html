@@ -874,15 +874,8 @@
           <input id="username" maxlength="24" placeholder="ex: Alex" />
         </div>
 
-        <div class="field">
-          <label for="roomId">Room ID</label>
-          <input id="roomId" maxlength="32" placeholder="ex: general" />
-        </div>
-
-        <button id="joinRoomBtn" class="send-btn" type="button">Join Room</button>
-
         <p class="hint">
-          Messages are stored in Supabase table <b>public.messages</b>, synced in realtime, and filtered by room.
+          Messages are stored in Supabase table <b>public.messages</b> and synced in realtime.
         </p>
 
         <details>
@@ -1074,8 +1067,6 @@ using (true);</pre>
     const statusEl = document.getElementById("status");
     const messagesEl = document.getElementById("messages");
     const usernameEl = document.getElementById("username");
-    const roomIdEl = document.getElementById("roomId");
-    const joinRoomBtnEl = document.getElementById("joinRoomBtn");
     const composerEl = document.getElementById("composer");
     const messageInputEl = document.getElementById("messageInput");
     const fileInputEl = document.getElementById("fileInput");
@@ -1110,14 +1101,7 @@ using (true);</pre>
       return id;
     })();
 
-    const normalizeRoom = (value) => {
-      const normalized = (value || "").trim().toLowerCase().replace(/\s+/g, "-");
-      return normalized.slice(0, 32) || "general";
-    };
-
-    const setRoomSubtitle = () => {
-      titleSubtitleEl.textContent = `Single HTML file, no custom backend. Room: ${currentRoom}`;
-    };
+    titleSubtitleEl.textContent = "Single HTML file, no custom backend.";
 
     const ensureEmptyState = () => {
       const existing = document.getElementById("emptyState");
@@ -1139,15 +1123,9 @@ using (true);</pre>
     };
 
     const cachedName = localStorage.getItem("chat_name");
-    const cachedRoom = localStorage.getItem("chat_room");
     if (cachedName) {
       usernameEl.value = cachedName;
     }
-    if (cachedRoom) {
-      currentRoom = normalizeRoom(cachedRoom);
-    }
-    roomIdEl.value = currentRoom;
-    setRoomSubtitle();
 
     usernameEl.addEventListener("change", () => {
       localStorage.setItem("chat_name", usernameEl.value.trim());
@@ -1687,80 +1665,6 @@ using (true);</pre>
         setUploadStatus("", false);
       }, 1500);
     };
-
-    const applyRoom = async (requestedRoom) => {
-      currentRoom = normalizeRoom(requestedRoom);
-      roomIdEl.value = currentRoom;
-      localStorage.setItem("chat_room", currentRoom);
-      setRoomSubtitle();
-      clearMessages();
-
-      if (presenceChannel) {
-        await supabase.removeChannel(presenceChannel);
-      }
-
-      presenceUsers.clear();
-      updatePresenceInfo();
-      updateTypingIndicator();
-
-      presenceChannel = supabase.channel(`chat-presence:${currentRoom}`, {
-        config: {
-          broadcast: { ack: true },
-          presence: { key: clientUserId }
-        }
-      });
-
-      presenceChannel.on("presence", { event: "sync" }, () => {
-        presenceUsers.clear();
-        Object.entries(presenceChannel.presenceState()).forEach(([key, states]) => {
-          if (Array.isArray(states) && states[0]) {
-            const user = states[0];
-            if (user.room === currentRoom) {
-              presenceUsers[key] = user;
-            }
-          }
-        });
-        updatePresenceInfo();
-        updateTypingIndicator();
-      });
-
-      presenceChannel.on("presence", { event: "join" }, () => {
-        updatePresenceInfo();
-        updateTypingIndicator();
-      });
-
-      presenceChannel.on("presence", { event: "leave" }, () => {
-        updatePresenceInfo();
-        updateTypingIndicator();
-      });
-
-      await presenceChannel.subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
-          const username = usernameEl.value.trim() || "guest";
-          await presenceChannel.track({
-            username,
-            room: currentRoom,
-            typing: false,
-            online_at: new Date().toISOString()
-          });
-        }
-      });
-
-      await loadInitialMessages();
-    };
-
-    joinRoomBtnEl.addEventListener("click", async () => {
-      await applyRoom(roomIdEl.value);
-      messageInputEl.focus();
-    });
-
-    roomIdEl.addEventListener("keydown", async (event) => {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        await applyRoom(roomIdEl.value);
-        messageInputEl.focus();
-      }
-    });
 
     attachBtnEl.addEventListener("click", () => {
       fileInputEl.click();

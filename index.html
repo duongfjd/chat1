@@ -1,0 +1,1650 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5, user-scalable=yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Supabase Realtime Chat - Single HTML</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-0: #f5f8f2;
+      --bg-1: #e8f1df;
+      --panel: #ffffffd9;
+      --text: #12211a;
+      --muted: #4a6458;
+      --accent: #0f7a4b;
+      --accent-2: #f1a208;
+      --danger: #af1b3f;
+      --line: #cddccf;
+      --shadow: 0 18px 50px rgba(17, 31, 23, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 10% 12%, #d5ecbe 0%, transparent 28%),
+        radial-gradient(circle at 84% 8%, #fff6dc 0%, transparent 22%),
+        linear-gradient(165deg, var(--bg-0) 0%, var(--bg-1) 100%);
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      padding-top: max(20px, env(safe-area-inset-top));
+      padding-bottom: max(20px, env(safe-area-inset-bottom));
+      padding-left: max(20px, env(safe-area-inset-left));
+      padding-right: max(20px, env(safe-area-inset-right));
+      animation: fadeIn 500ms ease-out;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .chat-shell {
+      width: min(920px, 100%);
+      border: 1px solid var(--line);
+      background: var(--panel);
+      backdrop-filter: blur(12px);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      background: linear-gradient(130deg, #f9fff2 10%, #fff7e4 100%);
+    }
+
+    .title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .title h1 {
+      font-size: clamp(1rem, 2vw, 1.3rem);
+      letter-spacing: 0.02em;
+      word-break: break-word;
+    }
+
+    .title p {
+      font-size: 0.9rem;
+      color: var(--muted);
+      word-break: break-word;
+    }
+
+    .status {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.78rem;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      background: #fcfff9;
+      white-space: nowrap;
+    }
+
+    .status.live {
+      border-color: #1f9f4f66;
+      color: var(--accent);
+      background: #efffed;
+    }
+
+    .status.error {
+      border-color: #af1b3f66;
+      color: var(--danger);
+      background: #fff4f7;
+    }
+
+    .room {
+      display: grid;
+      grid-template-columns: 250px 1fr;
+      min-height: 68vh;
+      width: 100%;
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--line);
+      padding: 18px;
+      background: #fcfef9;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .field input,
+    .field textarea {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 13px;
+      outline: none;
+      background: #fff;
+      font: inherit;
+      transition: border-color 150ms ease;
+      min-height: 44px;
+      font-size: 16px;
+    }
+
+    .field input:focus,
+    .field textarea:focus {
+      border-color: #6fac8f;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    details {
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      background: #fff;
+    }
+
+    summary {
+      cursor: pointer;
+      font-size: 0.84rem;
+      font-weight: 600;
+    }
+
+    pre {
+      margin-top: 8px;
+      max-height: 240px;
+      overflow: auto;
+      font-size: 0.74rem;
+      line-height: 1.45;
+      font-family: "IBM Plex Mono", monospace;
+      padding: 8px;
+      background: #f7fbf5;
+      border-radius: 8px;
+    }
+
+    .main {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      min-height: 0;
+    }
+
+    .messages {
+      list-style: none;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+      min-height: 0;
+    }
+
+    .message {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px 12px 8px 12px;
+      background: #fff;
+      animation: slideIn 250ms ease;
+      position: relative;
+      transition: background 120ms ease;
+    }
+
+    .message:hover {
+      background: #fafbf9;
+    }
+
+    .message.deleted {
+      opacity: 0.6;
+      background: #f5f5f5;
+    }
+
+    .message-actions {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      display: flex;
+      gap: 3px;
+      opacity: 0;
+      transition: opacity 120ms ease;
+    }
+
+    .message:hover .message-actions {
+      opacity: 1;
+    }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 0.85rem;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: background 120ms ease;
+    }
+
+    .delete-btn:hover {
+      background: rgba(175, 27, 63, 0.1);
+    }
+
+    .reactions-zone {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 6px;
+      align-items: center;
+    }
+
+    .reaction-btn {
+      background: #f0f0f0;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 2px 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: background 120ms ease;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .reaction-btn:hover {
+      background: #e8e8e8;
+    }
+
+    .emoji-picker-btn {
+      background: none;
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      padding: 2px 4px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      transition: border 120ms ease;
+    }
+
+    .emoji-picker-btn:hover {
+      border-color: var(--accent);
+    }
+
+    .messages.drag-over {
+      background: rgba(15, 122, 75, 0.05);
+      border: 2px dashed var(--accent);
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.99); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .meta {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.74rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .content {
+      word-wrap: break-word;
+      white-space: pre-wrap;
+      line-height: 1.45;
+      font-size: 0.95rem;
+    }
+
+    .composer {
+      border-top: 1px solid var(--line);
+      padding: 14px;
+      background: #fbfdf8;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .composer-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .file-btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      padding: 11px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 120ms ease;
+      min-height: 44px;
+      min-width: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+    }
+
+    .file-btn:hover {
+      background: #f5fbf3;
+    }
+
+    .attachment {
+      margin-top: 8px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px;
+      background: #f8fcf5;
+    }
+
+    .attachment img {
+      display: block;
+      width: 100%;
+      max-width: 280px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      margin-top: 6px;
+    }
+
+    .attachment a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+      word-break: break-all;
+    }
+
+    .attachment a:hover {
+      text-decoration: underline;
+    }
+
+    .composer textarea {
+      min-height: 42px;
+      max-height: 120px;
+      resize: vertical;
+      flex: 1;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      font: inherit;
+      outline: none;
+      background: #fff;
+      font-size: 16px;
+    }
+
+    .progress-bar-wrapper {
+      width: 100%;
+      height: 3px;
+      background: #e8e8e8;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #15915a);
+      width: 0%;
+      transition: width 150ms ease;
+    }
+
+    .upload-status {
+      font-size: 0.78rem;
+      color: var(--muted);
+      padding: 6px 10px;
+      background: #f8fbf5;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      margin-top: 6px;
+      display: none;
+    }
+
+    .upload-status.error {
+      color: var(--danger);
+      background: #fff4f7;
+      border-color: rgba(175, 27, 63, 0.3);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      z-index: 9999;
+      animation: slideUp 300ms ease-out;
+    }
+
+    @keyframes slideUp {
+      from { 
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+      }
+      to { 
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+
+    .send-btn {
+      border: none;
+      background: linear-gradient(140deg, var(--accent) 0%, #15915a 100%);
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      transition: transform 120ms ease, filter 120ms ease;
+      min-height: 44px;
+      min-width: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+    }
+
+    .send-btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.03);
+    }
+
+    .send-btn:active {
+      transform: translateY(0);
+    }
+
+    .send-btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .empty {
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      color: var(--muted);
+      background: #ffffffa8;
+    }
+
+    @media (max-width: 760px) {
+      .chat-shell {
+        width: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+      }
+
+      body {
+        padding: 0;
+      }
+
+      .header {
+        padding: 12px 14px;
+        gap: 8px;
+      }
+
+      .title h1 {
+        font-size: 1.1rem;
+      }
+
+      .title p {
+        font-size: 0.8rem;
+      }
+
+      .room {
+        grid-template-columns: 1fr;
+        min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 140px);
+      }
+
+      .sidebar {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+        padding: 12px;
+        max-height: 50px;
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+        align-items: center;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .sidebar > * {
+        flex-shrink: 0;
+      }
+
+      .field {
+        gap: 2px;
+      }
+
+      .field label {
+        display: none;
+      }
+
+      .field input {
+        min-height: 40px;
+        padding: 8px 10px;
+        font-size: 14px;
+        max-width: 120px;
+      }
+
+      #joinRoomBtn {
+        padding: 8px 12px;
+        min-height: 40px;
+        font-size: 0.85rem;
+      }
+
+      .hint {
+        display: none;
+      }
+
+      details {
+        display: none;
+      }
+
+      .messages {
+        padding: 12px;
+        gap: 10px;
+      }
+
+      .message {
+        padding: 10px;
+        margin: 0;
+      }
+
+      .meta {
+        font-size: 0.7rem;
+      }
+
+      .content {
+        font-size: 0.9rem;
+        line-height: 1.4;
+      }
+
+      .composer {
+        padding: 8px;
+        gap: 6px;
+        flex-direction: row;
+        padding-bottom: max(8px, env(safe-area-inset-bottom));
+        border-radius: 0;
+      }
+
+      .composer textarea {
+        min-height: 40px;
+        font-size: 14px;
+      }
+
+      .composer-actions {
+        gap: 4px;
+      }
+
+      .file-btn {
+        padding: 8px 10px;
+        min-height: 40px;
+        font-size: 0.8rem;
+      }
+
+      .send-btn {
+        padding: 8px 12px;
+        min-height: 40px;
+        font-size: 0.85rem;
+      }
+
+      .upload-status {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+        margin-top: 4px;
+      }
+
+      .progress-bar-wrapper {
+        margin-top: 4px;
+        height: 2px;
+      }
+
+      .delete-btn {
+        font-size: 0.8rem;
+        padding: 2px 3px;
+      }
+
+      .reactions-zone {
+        gap: 3px;
+        margin-top: 4px;
+      }
+
+      .reaction-btn {
+        padding: 2px 5px;
+        font-size: 0.75rem;
+      }
+
+      .emoji-picker-btn {
+        padding: 2px 3px;
+        font-size: 0.7rem;
+      }
+
+      .status {
+        font-size: 0.7rem;
+        padding: 5px 8px;
+      }
+
+      .attachment img {
+        max-width: 100%;
+      }
+
+      .toast {
+        bottom: max(20px, calc(env(safe-area-inset-bottom) + 10px));
+        font-size: 0.85rem;
+        padding: 8px 14px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header {
+        padding: 10px 12px;
+      }
+
+      .title h1 {
+        font-size: 1rem;
+      }
+
+      .title p {
+        font-size: 0.75rem;
+      }
+
+      .room {
+        min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 120px);
+      }
+
+      .sidebar {
+        max-height: 45px;
+      }
+
+      .field input {
+        max-width: 100px;
+        font-size: 13px;
+      }
+
+      .messages {
+        padding: 10px;
+        gap: 8px;
+      }
+
+      .message {
+        padding: 8px;
+      }
+
+      .meta {
+        font-size: 0.65rem;
+      }
+
+      .content {
+        font-size: 0.85rem;
+      }
+
+      .composer {
+        padding: 6px;
+        padding-bottom: max(6px, env(safe-area-inset-bottom));
+      }
+
+      .composer textarea {
+        min-height: 36px;
+        font-size: 13px;
+      }
+
+      .send-btn,
+      .file-btn {
+        padding: 6px 10px;
+        min-height: 36px;
+        font-size: 0.8rem;
+      }
+    }
+
+    @supports (padding: max(0px)) {
+      body {
+        padding-left: max(12px, env(safe-area-inset-left));
+        padding-right: max(12px, env(safe-area-inset-right));
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="chat-shell">
+    <header class="header">
+      <div class="title">
+        <h1>Supabase Realtime Chat</h1>
+        <p>Single HTML file, no custom backend.</p>
+      </div>
+      <div id="status" class="status">connecting...</div>
+    </header>
+
+    <section class="room">
+      <aside class="sidebar">
+        <div class="field">
+          <label for="username">Your name</label>
+          <input id="username" maxlength="24" placeholder="ex: Alex" />
+        </div>
+
+        <div class="field">
+          <label for="roomId">Room ID</label>
+          <input id="roomId" maxlength="32" placeholder="ex: general" />
+        </div>
+
+        <button id="joinRoomBtn" class="send-btn" type="button">Join Room</button>
+
+        <p class="hint">
+          Messages are stored in Supabase table <b>public.messages</b>, synced in realtime, and filtered by room.
+        </p>
+
+        <details>
+          <summary>Run this SQL in Supabase (create or upgrade)</summary>
+          <pre>create table if not exists public.messages (
+  id bigint generated by default as identity primary key,
+  room_id text not null default 'general' check (char_length(room_id) between 1 and 32),
+  username text not null check (char_length(username) between 1 and 24),
+  content text not null check (char_length(content) between 1 and 500),
+  created_at timestamptz not null default now()
+);
+
+alter table public.messages add column if not exists room_id text;
+alter table public.messages add column if not exists username text;
+alter table public.messages add column if not exists content text;
+alter table public.messages add column if not exists created_at timestamptz;
+
+update public.messages set room_id = 'general' where room_id is null;
+update public.messages set username = 'guest' where username is null or username = '';
+update public.messages set content = '[legacy message]' where content is null or content = '';
+update public.messages set created_at = now() where created_at is null;
+
+alter table public.messages alter column room_id set default 'general';
+alter table public.messages alter column room_id set not null;
+alter table public.messages alter column username set default 'guest';
+alter table public.messages alter column username set not null;
+alter table public.messages alter column content set default '[empty]';
+alter table public.messages alter column content set not null;
+alter table public.messages alter column created_at set default now();
+alter table public.messages alter column created_at set not null;
+
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'messages'
+      and column_name = 'user_id'
+  ) then
+    alter table public.messages alter column user_id drop not null;
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'messages_username_length'
+  ) then
+    alter table public.messages
+    add constraint messages_username_length
+    check (char_length(username) between 1 and 24);
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'messages_content_length'
+  ) then
+    alter table public.messages
+    add constraint messages_content_length
+    check (char_length(content) between 1 and 500);
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'messages_room_id_length'
+  ) then
+    alter table public.messages
+    add constraint messages_room_id_length
+    check (char_length(room_id) between 1 and 32);
+  end if;
+end $$;
+
+create index if not exists messages_room_id_created_at_idx
+on public.messages (room_id, created_at);
+
+alter table public.messages enable row level security;
+
+drop policy if exists "public read messages" on public.messages;
+create policy "public read messages"
+on public.messages
+for select
+using (true);
+
+drop policy if exists "public insert messages" on public.messages;
+create policy "public insert messages"
+on public.messages
+for insert
+to anon
+with check (true);
+
+insert into storage.buckets (id, name, public)
+values ('chat-images', 'chat-images', true)
+on conflict (id)
+do update set
+  name = excluded.name,
+  public = true;
+
+drop policy if exists "public read chat-images" on storage.objects;
+create policy "public read chat-images"
+on storage.objects
+for select
+to public
+using (bucket_id = 'chat-images');
+
+drop policy if exists "public upload chat-images" on storage.objects;
+create policy "public upload chat-images"
+on storage.objects
+for insert
+to public
+with check (bucket_id = 'chat-images');
+
+create table if not exists public.message_reactions (
+  id bigint generated by default as identity primary key,
+  message_id bigint not null,
+  username text not null check (char_length(username) between 1 and 24),
+  emoji text not null check (char_length(emoji) = 1),
+  created_at timestamptz not null default now(),
+  unique(message_id, username, emoji)
+);
+
+alter table public.message_reactions enable row level security;
+
+drop policy if exists "public read reactions" on public.message_reactions;
+create policy "public read reactions"
+on public.message_reactions
+for select
+using (true);
+
+drop policy if exists "public insert reactions" on public.message_reactions;
+create policy "public insert reactions"
+on public.message_reactions
+for insert
+to anon
+with check (true);
+
+drop policy if exists "public delete reactions" on public.message_reactions;
+create policy "public delete reactions"
+on public.message_reactions
+for delete
+to anon
+using (true);</pre>
+        </details>
+      </aside>
+
+      <section class="main">
+        <ul id="messages" class="messages">
+          <li class="empty" id="emptyState">No messages in this room yet. Send the first one.</li>
+        </ul>
+
+        <form id="composer" class="composer" autocomplete="off">
+          <textarea id="messageInput" maxlength="500" placeholder="Type a message..."></textarea>
+          <div class="composer-actions">
+            <input id="fileInput" type="file" hidden />
+            <button id="attachBtn" class="file-btn" type="button">Attach</button>
+            <button id="sendBtn" class="send-btn" type="submit">Send</button>
+          </div>
+          <div id="uploadStatus" class="upload-status"></div>
+          <div id="progressWrapper" class="progress-bar-wrapper" style="display: none;">
+            <div id="progressBar" class="progress-bar"></div>
+          </div>
+        </form>
+      </section>
+    </section>
+  </main>
+
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+    const SUPABASE_URL = "https://shzxqulhxwmjdipjkwqe.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_l5VdADKMm4fwADcrpZn-VQ_xATGQb7w";
+    const STORAGE_BUCKET = "chat-images";
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false }
+    });
+
+    const statusEl = document.getElementById("status");
+    const messagesEl = document.getElementById("messages");
+    const usernameEl = document.getElementById("username");
+    const roomIdEl = document.getElementById("roomId");
+    const joinRoomBtnEl = document.getElementById("joinRoomBtn");
+    const composerEl = document.getElementById("composer");
+    const messageInputEl = document.getElementById("messageInput");
+    const fileInputEl = document.getElementById("fileInput");
+    const attachBtnEl = document.getElementById("attachBtn");
+    const sendBtnEl = document.getElementById("sendBtn");
+    const titleSubtitleEl = document.querySelector(".title p");
+    const uploadStatusEl = document.getElementById("uploadStatus");
+    const progressWrapperEl = document.getElementById("progressWrapper");
+    const progressBarEl = document.getElementById("progressBar");
+
+    const renderedIds = new Set();
+    const messageReactions = {};
+    let currentRoom = "general";
+    let hasRoomColumn = true;
+    let hasUsernameColumn = true;
+    let hasContentColumn = true;
+    let hasCreatedAtColumn = true;
+    let hasUserIdColumn = false;
+
+    const clientUserId = (() => {
+      const cached = localStorage.getItem("chat_user_id");
+      if (cached) {
+        return cached;
+      }
+
+      const id = crypto.randomUUID();
+      localStorage.setItem("chat_user_id", id);
+      return id;
+    })();
+
+    const normalizeRoom = (value) => {
+      const normalized = (value || "").trim().toLowerCase().replace(/\s+/g, "-");
+      return normalized.slice(0, 32) || "general";
+    };
+
+    const setRoomSubtitle = () => {
+      titleSubtitleEl.textContent = `Single HTML file, no custom backend. Room: ${currentRoom}`;
+    };
+
+    const ensureEmptyState = () => {
+      const existing = document.getElementById("emptyState");
+      if (existing || messagesEl.children.length > 0) {
+        return;
+      }
+
+      const li = document.createElement("li");
+      li.className = "empty";
+      li.id = "emptyState";
+      li.textContent = "No messages in this room yet. Send the first one.";
+      messagesEl.appendChild(li);
+    };
+
+    const clearMessages = () => {
+      renderedIds.clear();
+      messagesEl.innerHTML = "";
+      ensureEmptyState();
+    };
+
+    const cachedName = localStorage.getItem("chat_name");
+    const cachedRoom = localStorage.getItem("chat_room");
+    if (cachedName) {
+      usernameEl.value = cachedName;
+    }
+    if (cachedRoom) {
+      currentRoom = normalizeRoom(cachedRoom);
+    }
+    roomIdEl.value = currentRoom;
+    setRoomSubtitle();
+
+    usernameEl.addEventListener("change", () => {
+      localStorage.setItem("chat_name", usernameEl.value.trim());
+    });
+
+    const formatTime = (isoString) => {
+      try {
+        return new Date(isoString).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      } catch {
+        return "--:--";
+      }
+    };
+
+    const setStatus = (text, type = "") => {
+      statusEl.textContent = text;
+      statusEl.classList.remove("live", "error");
+      if (type) {
+        statusEl.classList.add(type);
+      }
+    };
+
+    const encodeAttachmentMarker = ({ name, mime, url }) => {
+      return `[[file:${encodeURIComponent(name)}:${encodeURIComponent(mime || "application/octet-stream")}:${encodeURIComponent(url)}]]`;
+    };
+
+    const parseAttachmentMarker = (raw) => {
+      if (typeof raw !== "string") {
+        return null;
+      }
+
+      const match = raw.match(/^\[\[file:([^:]*):([^:]*):(.+)\]\]$/);
+      if (!match) {
+        return null;
+      }
+
+      try {
+        return {
+          name: decodeURIComponent(match[1] || "file"),
+          mime: decodeURIComponent(match[2] || "application/octet-stream"),
+          url: decodeURIComponent(match[3] || "")
+        };
+      } catch {
+        return null;
+      }
+    };
+
+    const appendMessage = (message) => {
+      if (hasRoomColumn && message.room_id !== currentRoom) {
+        return;
+      }
+
+      if (!message || renderedIds.has(message.id)) {
+        return;
+      }
+
+      renderedIds.add(message.id);
+      const emptyStateEl = document.getElementById("emptyState");
+      if (emptyStateEl) {
+        emptyStateEl.remove();
+      }
+
+      const li = document.createElement("li");
+      li.className = "message";
+      li.setAttribute("data-message-id", message.id);
+
+      const isDeleted = message.content === "[deleted]";
+      if (isDeleted) {
+        li.classList.add("deleted");
+      }
+
+      const actionsBtnContainer = document.createElement("div");
+      actionsBtnContainer.className = "message-actions";
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.className = "delete-btn";
+      deleteBtn.textContent = "✕";
+      deleteBtn.title = "Delete";
+      deleteBtn.onclick = (e) => {
+        e.preventDefault();
+        deleteMessage(message.id, message.username);
+      };
+      actionsBtnContainer.appendChild(deleteBtn);
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      const sender = message.username || message.user_id || "unknown";
+      const roomLabel = hasRoomColumn ? ` @${escapeHtml(message.room_id || "general")}` : "";
+      const timeValue = hasCreatedAtColumn ? formatTime(message.created_at) : "--:--";
+      meta.innerHTML = `<span>${escapeHtml(sender)}${roomLabel}</span><span>${timeValue}</span>`;
+
+      const content = document.createElement("p");
+      content.className = "content";
+      const rawContent = message.content || message.message || "";
+      const attachment = parseAttachmentMarker(rawContent);
+      if (!attachment) {
+        content.textContent = rawContent;
+      } else {
+        content.textContent = `${attachment.name} (${attachment.mime})`;
+
+        const box = document.createElement("div");
+        box.className = "attachment";
+
+        const link = document.createElement("a");
+        link.href = attachment.url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = "Open file";
+
+        box.appendChild(link);
+
+        if (attachment.mime.startsWith("image/")) {
+          const img = document.createElement("img");
+          img.loading = "lazy";
+          img.alt = attachment.name;
+          img.src = attachment.url;
+          box.appendChild(img);
+        }
+
+        content.appendChild(box);
+      }
+
+      li.appendChild(actionsBtnContainer);
+      li.append(meta, content);
+
+      li.addEventListener("dblclick", () => {
+        copyMessageContent(li);
+      });
+
+      li.addEventListener("touchstart", () => {
+        longPressTimer = setTimeout(() => {
+          copyMessageContent(li);
+          longPressTimer = null;
+        }, 500);
+      });
+
+      li.addEventListener("touchend", () => {
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
+      });
+
+      li.addEventListener("touchmove", () => {
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
+      });
+
+      loadReactionsForMessage(message.id).then(() => {
+        renderReactionsForMessage(li, message.id);
+      });
+
+      messagesEl.appendChild(li);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    };
+
+    const escapeHtml = (unsafe = "") =>
+      unsafe
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+    const setUploadStatus = (text, isError = false) => {
+      uploadStatusEl.textContent = text;
+      uploadStatusEl.classList.toggle("error", isError);
+      uploadStatusEl.style.display = text ? "block" : "none";
+    };
+
+    const setProgress = (percent) => {
+      progressBarEl.style.width = `${Math.max(0, Math.min(100, percent))}%`;
+      progressWrapperEl.style.display = percent > 0 && percent < 100 ? "block" : "none";
+    };
+
+    const showToast = (message) => {
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      toast.textContent = message;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.animation = "none";
+        toast.style.opacity = "0";
+        setTimeout(() => toast.remove(), 300);
+      }, 1500);
+    };
+
+    const copyMessageContent = (messageEl) => {
+      let textContent = "";
+
+      const contentEl = messageEl.querySelector(".content");
+      if (contentEl) {
+        const metaEl = messageEl.querySelector(".meta");
+        const senderText = metaEl ? metaEl.textContent : "";
+
+        const attachmentEl = contentEl.querySelector(".attachment a");
+        if (attachmentEl) {
+          const url = attachmentEl.href;
+          const fileName = contentEl.textContent.split("(")[0].trim();
+          textContent = `${senderText}\n${fileName}\n${url}`;
+        } else {
+          textContent = contentEl.textContent;
+        }
+      }
+
+      if (!textContent) {
+        return;
+      }
+
+      navigator.clipboard.writeText(textContent).then(
+        () => {
+          showToast("Copied!");
+        },
+        () => {
+          showToast("Failed to copy");
+        }
+      );
+    };
+
+    let longPressTimer = null;
+
+    const deleteMessage = async (messageId, messageUsername) => {
+      if (messageUsername !== (usernameEl.value.trim() || "guest")) {
+        setStatus("can only delete own messages", "error");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("messages")
+        .update({ content: "[deleted]" })
+        .eq("id", messageId);
+
+      if (error) {
+        console.error(error);
+        setStatus("delete failed", "error");
+      }
+    };
+
+    const loadReactionsForMessage = async (messageId) => {
+      const { data, error } = await supabase
+        .from("message_reactions")
+        .select("*")
+        .eq("message_id", messageId);
+
+      if (error) {
+        console.error(error);
+        return [];
+      }
+
+      messageReactions[messageId] = data || [];
+      return data || [];
+    };
+
+    const addReaction = async (messageId, emoji) => {
+      const username = usernameEl.value.trim() || "guest";
+
+      const { error } = await supabase
+        .from("message_reactions")
+        .insert({ message_id: messageId, username, emoji });
+
+      if (error && error.code === "23505") {
+        await supabase
+          .from("message_reactions")
+          .delete()
+          .eq("message_id", messageId)
+          .eq("username", username)
+          .eq("emoji", emoji);
+      } else if (error) {
+        console.error(error);
+      }
+
+      await loadReactionsForMessage(messageId);
+      const el = document.querySelector(`[data-message-id="${messageId}"]`);
+      if (el) {
+        renderReactionsForMessage(el, messageId);
+      }
+    };
+
+    const renderReactionsForMessage = (messageEl, messageId) => {
+      let zone = messageEl.querySelector(".reactions-zone");
+      if (!zone) {
+        zone = document.createElement("div");
+        zone.className = "reactions-zone";
+        messageEl.appendChild(zone);
+      }
+      zone.innerHTML = "";
+
+      const reactions = messageReactions[messageId] || [];
+      const grouped = {};
+      reactions.forEach((r) => {
+        grouped[r.emoji] = (grouped[r.emoji] || 0) + 1;
+      });
+
+      Object.entries(grouped).forEach(([emoji, count]) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "reaction-btn";
+        btn.textContent = `${emoji} ${count}`;
+        btn.onclick = (e) => {
+          e.preventDefault();
+          addReaction(messageId, emoji);
+        };
+        zone.appendChild(btn);
+      });
+
+      const emojiBtn = document.createElement("button");
+      emojiBtn.type = "button";
+      emojiBtn.className = "emoji-picker-btn";
+      emojiBtn.textContent = "😀";
+      emojiBtn.onclick = (e) => {
+        e.preventDefault();
+        const emojis = ["👍", "❤️", "😂", "🔥", "😍", "🎉"];
+        const chosen = emojis[Math.floor(Math.random() * emojis.length)];
+        addReaction(messageId, chosen);
+      };
+      zone.appendChild(emojiBtn);
+    };
+
+    const loadInitialMessages = async () => {
+      let result = await supabase
+        .from("messages")
+        .select("*")
+        .order("id", { ascending: true })
+        .limit(100);
+
+      if (result.error) {
+        setStatus("load failed", "error");
+        console.error(result.error);
+        return;
+      }
+
+      const rows = result.data || [];
+      if (rows.length > 0) {
+        const sample = rows[0];
+        hasRoomColumn = Object.prototype.hasOwnProperty.call(sample, "room_id");
+        hasUsernameColumn = Object.prototype.hasOwnProperty.call(sample, "username");
+        hasContentColumn = Object.prototype.hasOwnProperty.call(sample, "content");
+        hasCreatedAtColumn = Object.prototype.hasOwnProperty.call(sample, "created_at");
+        hasUserIdColumn = Object.prototype.hasOwnProperty.call(sample, "user_id");
+      }
+
+      const { data, error } = result;
+
+      if (error) {
+        setStatus("load failed", "error");
+        console.error(error);
+        return;
+      }
+
+      const filtered = hasRoomColumn ? (data || []).filter((m) => m.room_id === currentRoom) : (data || []);
+      filtered.forEach(appendMessage);
+      ensureEmptyState();
+    };
+
+    const tryInsertMessage = async (basePayload) => {
+      const payload = { ...basePayload };
+
+      for (let i = 0; i < 5; i += 1) {
+        const { error } = await supabase.from("messages").insert(payload);
+        if (!error) {
+          return null;
+        }
+
+        const message = String(error.message || "").toLowerCase();
+        if (error.code === "42703") {
+          if (message.includes("room_id")) {
+            delete payload.room_id;
+            hasRoomColumn = false;
+            continue;
+          }
+          if (message.includes("username")) {
+            delete payload.username;
+            hasUsernameColumn = false;
+            continue;
+          }
+          if (message.includes("content")) {
+            delete payload.content;
+            hasContentColumn = false;
+            continue;
+          }
+          if (message.includes("created_at")) {
+            delete payload.created_at;
+            hasCreatedAtColumn = false;
+            continue;
+          }
+          if (message.includes("user_id")) {
+            delete payload.user_id;
+            hasUserIdColumn = false;
+            continue;
+          }
+        }
+
+        if (error.code === "23502" && message.includes("user_id")) {
+          payload.user_id = clientUserId;
+          hasUserIdColumn = true;
+          continue;
+        }
+
+        return error;
+      }
+
+      return { message: "insert failed after compatibility retries" };
+    };
+
+    const sanitizeFilename = (name) => {
+      return String(name || "file")
+        .replace(/[^a-zA-Z0-9._-]/g, "_")
+        .slice(0, 80);
+    };
+
+    const uploadAndSendFile = async (file) => {
+      if (!file) {
+        return;
+      }
+
+      const username = usernameEl.value.trim() || "guest";
+      localStorage.setItem("chat_name", username);
+
+      const safeName = sanitizeFilename(file.name);
+      const objectPath = `${currentRoom}/${Date.now()}-${crypto.randomUUID()}-${safeName}`;
+
+      sendBtnEl.disabled = true;
+      attachBtnEl.disabled = true;
+      setUploadStatus(`uploading ${file.name}...`);
+      setProgress(10);
+
+      let uploadError = null;
+      try {
+        const { error } = await supabase.storage
+          .from(STORAGE_BUCKET)
+          .upload(objectPath, file, {
+            upsert: false,
+            contentType: file.type || "application/octet-stream"
+          });
+
+        if (error) {
+          uploadError = error;
+        } else {
+          setProgress(80);
+          setUploadStatus(`processing ${file.name}...`);
+        }
+      } catch (err) {
+        uploadError = err;
+      }
+
+      if (uploadError) {
+        sendBtnEl.disabled = false;
+        attachBtnEl.disabled = false;
+        setUploadStatus("upload failed, retrying...", true);
+        setProgress(0);
+        console.error(uploadError);
+
+        setTimeout(() => {
+          setUploadStatus("", false);
+        }, 2000);
+        return;
+      }
+
+      const { data: publicData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(objectPath);
+      const marker = encodeAttachmentMarker({
+        name: file.name,
+        mime: file.type || "application/octet-stream",
+        url: publicData.publicUrl
+      });
+
+      const payload = {
+        content: marker,
+        username,
+        room_id: currentRoom,
+        user_id: clientUserId
+      };
+
+      const insertError = await tryInsertMessage(payload);
+      sendBtnEl.disabled = false;
+      attachBtnEl.disabled = false;
+
+      if (insertError) {
+        setUploadStatus("file sent but message failed", true);
+        console.error(insertError);
+
+        setTimeout(() => {
+          setUploadStatus("", false);
+        }, 2000);
+        return;
+      }
+
+      setProgress(100);
+      setUploadStatus(`✓ ${file.name} sent`);
+      fileInputEl.value = "";
+      messageInputEl.focus();
+
+      setTimeout(() => {
+        setProgress(0);
+        setUploadStatus("", false);
+      }, 1500);
+    };
+
+    const applyRoom = async (requestedRoom) => {
+      currentRoom = normalizeRoom(requestedRoom);
+      roomIdEl.value = currentRoom;
+      localStorage.setItem("chat_room", currentRoom);
+      setRoomSubtitle();
+      clearMessages();
+      await loadInitialMessages();
+    };
+
+    joinRoomBtnEl.addEventListener("click", async () => {
+      await applyRoom(roomIdEl.value);
+      messageInputEl.focus();
+    });
+
+    roomIdEl.addEventListener("keydown", async (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        await applyRoom(roomIdEl.value);
+        messageInputEl.focus();
+      }
+    });
+
+    attachBtnEl.addEventListener("click", () => {
+      fileInputEl.click();
+    });
+
+    fileInputEl.addEventListener("change", async () => {
+      const file = fileInputEl.files && fileInputEl.files[0];
+      await uploadAndSendFile(file);
+    });
+
+    messagesEl.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      messagesEl.classList.add("drag-over");
+    });
+
+    messagesEl.addEventListener("dragleave", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      messagesEl.classList.remove("drag-over");
+    });
+
+    messagesEl.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      messagesEl.classList.remove("drag-over");
+
+      const files = e.dataTransfer.files;
+      if (files && files[0]) {
+        await uploadAndSendFile(files[0]);
+      }
+    });
+
+    composerEl.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const username = usernameEl.value.trim() || "guest";
+      const content = messageInputEl.value.trim();
+
+      if (!content) {
+        return;
+      }
+
+      localStorage.setItem("chat_name", username);
+      sendBtnEl.disabled = true;
+
+      const payload = {
+        content,
+        username,
+        room_id: currentRoom,
+        user_id: clientUserId
+      };
+      const error = await tryInsertMessage(payload);
+
+      sendBtnEl.disabled = false;
+
+      if (error) {
+        const msg = String(error.message || "").toLowerCase();
+        if (msg.includes("username") || msg.includes("content") || msg.includes("created_at") || msg.includes("room_id") || msg.includes("user_id")) {
+          setStatus("schema mismatch: run SQL upgrade block", "error");
+        } else {
+          setStatus("send failed", "error");
+        }
+        console.error(error);
+        return;
+      }
+
+      messageInputEl.value = "";
+      messageInputEl.focus();
+    });
+
+    const channel = supabase
+      .channel("realtime-chat-room")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages"
+        },
+        (payload) => appendMessage(payload.new)
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          setStatus("realtime: connected", "live");
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          setStatus("realtime error", "error");
+        } else {
+          setStatus(`realtime: ${status.toLowerCase()}`);
+        }
+      });
+
+    window.addEventListener("beforeunload", async () => {
+      await supabase.removeChannel(channel);
+    });
+
+    clearMessages();
+    loadInitialMessages();
+  </script>
+</body>
+</html>

@@ -2,1055 +2,695 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5, user-scalable=yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>Supabase Realtime Chat - Single HTML</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Discord Clone - Chat</title>
   <style>
     :root {
-      --bg-0: #f5f8f2;
-      --bg-1: #e8f1df;
-      --panel: #ffffffd9;
-      --text: #12211a;
-      --muted: #4a6458;
-      --accent: #0f7a4b;
-      --accent-2: #f1a208;
-      --danger: #af1b3f;
-      --line: #cddccf;
-      --shadow: 0 18px 50px rgba(17, 31, 23, 0.15);
+      --bg-server: #202225;
+      --bg-channel: #2f3136;
+      --bg-chat: #36393f;
+      --bg-member: #2f3136;
+      --text-normal: #dcddde;
+      --text-muted: #8e9297;
+      --header-primary: #ffffff;
+      --channel-hover: #393c43;
+      --accent: #5865F2;
+      --accent-hover: #4752C4;
+      --input-bg: #40444b;
+      --divider: #ffffff0f;
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
     body {
-      font-family: "Space Grotesk", "Segoe UI", sans-serif;
-      color: var(--text);
-      min-height: 100vh;
-      background:
-        radial-gradient(circle at 10% 12%, #d5ecbe 0%, transparent 28%),
-        radial-gradient(circle at 84% 8%, #fff6dc 0%, transparent 22%),
-        linear-gradient(165deg, var(--bg-0) 0%, var(--bg-1) 100%);
-      display: grid;
-      place-items: center;
-      padding: 20px;
-      padding-top: max(20px, env(safe-area-inset-top));
-      padding-bottom: max(20px, env(safe-area-inset-bottom));
-      padding-left: max(20px, env(safe-area-inset-left));
-      padding-right: max(20px, env(safe-area-inset-right));
-      animation: fadeIn 500ms ease-out;
-      -webkit-user-select: none;
-      user-select: none;
-      -webkit-touch-callout: none;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .chat-shell {
-      width: min(920px, 100%);
-      border: 1px solid var(--line);
-      background: var(--panel);
-      backdrop-filter: blur(12px);
-      border-radius: 24px;
-      box-shadow: var(--shadow);
+      font-family: Inter, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", system-ui, sans-serif;
+      color: var(--text-normal);
+      background-color: var(--bg-chat);
+      height: 100vh;
       overflow: hidden;
-    }
-
-    .header {
-      padding: 18px 20px;
-      border-bottom: 1px solid var(--line);
       display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: center;
-      flex-wrap: wrap;
-      background: linear-gradient(130deg, #f9fff2 10%, #fff7e4 100%);
+      user-select: none;
     }
 
-    .title {
+    .discord-app {
+      display: flex;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Column 1: Server List */
+    .server-list {
+      width: 72px;
+      background-color: var(--bg-server);
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      align-items: center;
+      padding: 12px 0;
+      gap: 8px;
+      overflow-y: auto;
+    }
+    
+    .server-icon {
+      width: 48px; 
+      height: 48px;
+      background-color: #36393f;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    
+    .server-icon:hover {
+      border-radius: 16px;
+      background-color: var(--accent);
+      color: white;
+    }
+    
+    .server-icon.active {
+      border-radius: 16px;
+      background-color: var(--accent);
+    }
+    
+    .server-icon::before {
+      content: '';
+      position: absolute;
+      left: -12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 8px;
+      height: 0px;
+      background: white;
+      border-radius: 0 4px 4px 0;
+      transition: all 0.2s ease;
+    }
+    
+    .server-icon:hover::before {
+      height: 20px;
+    }
+    .server-icon.active::before {
+      height: 40px;
+    }
+
+    .server-separator {
+      width: 32px;
+      height: 2px;
+      background-color: var(--divider);
+      margin: 4px 0;
+    }
+
+    /* Column 2: Channel List */
+    .channel-list {
+      width: 240px;
+      background-color: var(--bg-channel);
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .channel-header {
+      height: 48px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--bg-server);
+      font-weight: 600;
+      color: var(--header-primary);
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .channel-header:hover {
+      background-color: var(--channel-hover);
+    }
+
+    .channels-scroll {
       flex: 1;
+      overflow-y: auto;
+      padding: 16px 8px;
+    }
+
+    .category {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+    }
+    .category:hover { color: var(--text-normal); }
+
+    .channel {
+      padding: 6px 8px;
+      margin-bottom: 2px;
+      border-radius: 4px;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 16px;
+      font-weight: 500;
+      transition: background-color 0.2s, color 0.2s;
+    }
+    .channel:hover {
+      background-color: var(--channel-hover);
+      color: var(--text-normal);
+    }
+    .channel.active {
+      background-color: #393c43;
+      color: var(--header-primary);
+    }
+
+    .user-section {
+      height: 52px;
+      background-color: #292b2f;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      gap: 8px;
+    }
+    
+    .avatar-wrapper {
+      position: relative;
+    }
+    .avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background-color: #f2f3f5;
+    }
+    .status-dot {
+      width: 10px; height: 10px;
+      background-color: #23a559;
+      border-radius: 50%;
+      position: absolute;
+      bottom: -2px; right: -2px;
+      border: 3px solid #292b2f;
+    }
+
+    .user-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .user-name {
+      font-size: 14px; font-weight: 600; color: white;
+      outline: none;
+      background: transparent;
+      border: none;
+      width: 100%;
+    }
+    .user-id {
+      font-size: 12px; color: var(--text-muted);
+    }
+    .user-controls {
+      display: flex;
+      gap: 4px;
+    }
+    .user-btn {
+      width: 32px; height: 32px;
+      border-radius: 4px;
+      display: flex; justify-content: center; align-items: center;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      color: var(--text-normal);
+    }
+    .user-btn:hover { background-color: var(--channel-hover); }
+
+    /* Column 3: Chat Area */
+    .chat-area {
+      flex: 1;
+      background-color: var(--bg-chat);
+      display: flex;
+      flex-direction: column;
       min-width: 0;
     }
 
-    .title h1 {
-      font-size: clamp(1rem, 2vw, 1.3rem);
-      letter-spacing: 0.02em;
-      word-break: break-word;
-    }
-
-    .title p {
-      font-size: 0.9rem;
-      color: var(--muted);
-      word-break: break-word;
-    }
-
-    .status {
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 0.78rem;
-      padding: 7px 10px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      color: var(--muted);
-      background: #fcfff9;
-      white-space: nowrap;
-    }
-
-    .status.live {
-      border-color: #1f9f4f66;
-      color: var(--accent);
-      background: #efffed;
-    }
-
-    .status.error {
-      border-color: #af1b3f66;
-      color: var(--danger);
-      background: #fff4f7;
-    }
-
-    .presence-info {
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 0.75rem;
-      padding: 6px 10px;
-      border-radius: 8px;
-      border: 1px solid var(--line);
-      color: var(--text);
-      background: #f8fbf5;
-      white-space: nowrap;
-      min-width: 100px;
-    }
-
-    .presence-info.active {
-      border-color: #1f9f4f66;
-      background: #efffed;
-    }
-
-    .typing-indicator {
-      position: fixed;
-      bottom: 60px;
-      left: 20px;
-      right: 20px;
-      font-size: 0.78rem;
-      color: var(--muted);
-      padding: 8px 12px;
-      background: #f8fbf5;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      display: none;
-      z-index: 10;
-      animation: slideUp 200ms ease-out;
-    }
-
-    .typing-indicator.show {
-      display: block;
-    }
-
-    .typing-dot {
-      display: inline-block;
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: var(--accent);
-      margin-left: 3px;
-      animation: bounce 1.4s infinite;
-    }
-
-    .typing-dot:nth-child(2) {
-      animation-delay: 0.2s;
-    }
-
-    .typing-dot:nth-child(3) {
-      animation-delay: 0.4s;
-    }
-
-    @keyframes bounce {
-      0%, 60%, 100% { opacity: 0.4; }
-      30% { opacity: 1; }
-    }
-
-    .room {
-      display: grid;
-      grid-template-columns: 250px 1fr;
-      min-height: 68vh;
-      width: 100%;
-    }
-
-    .sidebar {
-      border-right: 1px solid var(--line);
-      padding: 18px;
-      background: #fcfef9;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .field label {
-      font-size: 0.82rem;
-      color: var(--muted);
-      font-weight: 500;
-    }
-
-    .field input,
-    .field textarea {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 12px 13px;
-      outline: none;
-      background: #fff;
-      font: inherit;
-      transition: border-color 150ms ease;
-      min-height: 44px;
-      font-size: 16px;
-    }
-
-    .field input:focus,
-    .field textarea:focus {
-      border-color: #6fac8f;
-    }
-
-    .hint {
-      color: var(--muted);
-      font-size: 0.82rem;
-      line-height: 1.45;
-    }
-
-    details {
-      border: 1px dashed var(--line);
-      border-radius: 12px;
-      padding: 10px;
-      background: #fff;
-    }
-
-    summary {
-      cursor: pointer;
-      font-size: 0.84rem;
-      font-weight: 600;
-    }
-
-    pre {
-      margin-top: 8px;
-      max-height: 240px;
-      overflow: auto;
-      font-size: 0.74rem;
-      line-height: 1.45;
-      font-family: "IBM Plex Mono", monospace;
-      padding: 8px;
-      background: #f7fbf5;
-      border-radius: 8px;
-    }
-
-    .main {
-      display: grid;
-      grid-template-rows: 1fr auto;
-      min-height: 0;
-    }
-
-    .messages {
-      list-style: none;
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      overflow-y: auto;
-      min-height: 0;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior: contain;
-      touch-action: pan-y;
-    }
-
-    .message {
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 10px 12px 8px 12px;
-      background: #fff;
-      animation: slideIn 250ms ease;
-      position: relative;
-      transition: background 120ms ease;
-    }
-
-    .message:hover {
-      background: #fafbf9;
-    }
-
-    .message.deleted {
-      opacity: 0.6;
-      background: #f5f5f5;
-    }
-
-    .message-actions {
-      position: absolute;
-      top: 6px;
-      right: 6px;
-      display: flex;
-      gap: 3px;
-      opacity: 0;
-      transition: opacity 120ms ease;
-    }
-
-    .message:hover .message-actions {
-      opacity: 1;
-    }
-
-    .delete-btn {
-      background: none;
-      border: none;
-      color: var(--danger);
-      cursor: pointer;
-      font-size: 0.85rem;
-      padding: 2px 4px;
-      border-radius: 4px;
-      transition: background 120ms ease;
-    }
-
-    .delete-btn:hover {
-      background: rgba(175, 27, 63, 0.1);
-    }
-
-    .reactions-zone {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      margin-top: 6px;
-      align-items: center;
-    }
-
-    .reaction-btn {
-      background: #f0f0f0;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 2px 6px;
-      cursor: pointer;
-      font-size: 0.8rem;
-      transition: background 120ms ease;
+    .chat-header {
+      height: 48px;
+      padding: 0 16px;
       display: flex;
       align-items: center;
-      gap: 2px;
-    }
-
-    .reaction-btn:hover {
-      background: #e8e8e8;
-    }
-
-    .emoji-picker-btn {
-      background: none;
-      border: 1px dashed var(--line);
-      border-radius: 8px;
-      padding: 2px 4px;
-      cursor: pointer;
-      font-size: 0.75rem;
-      transition: border 120ms ease;
-    }
-
-    .emoji-picker-btn:hover {
-      border-color: var(--accent);
-    }
-
-    .messages.drag-over {
-      background: rgba(15, 122, 75, 0.05);
-      border: 2px dashed var(--accent);
-    }
-
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(8px) scale(0.99); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-
-    .meta {
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 0.74rem;
-      color: var(--muted);
-      display: flex;
       justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 4px;
+      border-bottom: 1px solid var(--bg-server);
     }
-
-    .content {
-      word-wrap: break-word;
-      white-space: pre-wrap;
-      line-height: 1.45;
-      font-size: 0.95rem;
+    .chat-title {
+      font-size: 16px; font-weight: 600; color: white;
+      display: flex; gap: 8px; align-items: center;
     }
-
-    .composer {
-      border-top: 1px solid var(--line);
-      padding: 14px;
-      background: #fbfdf8;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: flex-end;
-    }
-
-    .composer-actions {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .file-btn {
-      border: 1px solid var(--line);
-      background: #fff;
-      color: var(--text);
-      padding: 11px 14px;
-      border-radius: 12px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: background 120ms ease;
-      min-height: 44px;
-      min-width: 44px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.9rem;
-    }
-
-    .file-btn:hover {
-      background: #f5fbf3;
-    }
-
-    .attachment {
-      margin-top: 8px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 8px;
-      background: #f8fcf5;
-    }
-
-    .attachment img {
-      display: block;
-      width: 100%;
-      max-width: 280px;
-      border-radius: 8px;
-      border: 1px solid var(--line);
-      margin-top: 6px;
-    }
-
-    .attachment a {
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 600;
-      word-break: break-all;
-    }
-
-    .attachment a:hover {
-      text-decoration: underline;
-    }
-
-    .composer textarea {
-      min-height: 42px;
-      max-height: 120px;
-      resize: vertical;
+    .chat-title span { color: var(--text-muted); font-size: 24px; font-weight: 400; }
+    
+    .chat-tools { display: flex; gap: 16px; align-items: center; color: var(--text-muted); }
+    .search-bar { background-color: var(--bg-server); padding: 4px 8px; border-radius: 4px; font-size: 14px; width: 144px; display: flex; justify-content: space-between; }
+    
+    .messages-wrapper {
       flex: 1;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 10px;
-      font: inherit;
-      outline: none;
-      background: #fff;
-      font-size: 16px;
+      overflow-y: auto;
+      padding: 16px 0;
+      display: flex;
+      flex-direction: column;
     }
-
-    .composer-actions {
-      margin-left: auto;
+    
+    .message {
+      padding: 4px 16px;
+      display: flex;
+      gap: 16px;
+      margin-top: 17px;
+      position: relative;
     }
-
-    .progress-bar-wrapper {
-      width: 100%;
-      height: 3px;
-      background: #e8e8e8;
-      border-radius: 2px;
-      overflow: hidden;
-      margin-top: 6px;
+    .message:hover {
+      background-color: var(--divider);
     }
-
-    .progress-bar {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent), #15915a);
-      width: 0%;
-      transition: width 150ms ease;
+    
+    .msg-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background-color: #5865F2; /* Placeholder */
+      flex-shrink: 0;
     }
-
-    .upload-status {
-      font-size: 0.78rem;
-      color: var(--muted);
-      padding: 6px 10px;
-      background: #f8fbf5;
-      border-radius: 8px;
-      border: 1px solid var(--line);
-      margin-top: 6px;
+    .msg-content-wrapper { flex: 1; min-width: 0; }
+    .msg-header { display: flex; gap: 8px; align-items: baseline; margin-bottom: 4px; }
+    .msg-author { font-weight: 500; color: white; font-size: 16px; cursor: pointer; }
+    .msg-author:hover { text-decoration: underline; }
+    .msg-time { font-size: 12px; color: var(--text-muted); }
+    .msg-content { font-size: 16px; color: var(--text-normal); line-height: 1.375rem; word-wrap: break-word; white-space: pre-wrap; }
+    .message.deleted .msg-content { opacity: 0.5; font-style: italic; }
+    
+    .msg-actions {
+      position: absolute; right: 16px; top: -16px;
+      background-color: var(--bg-chat);
+      border: 1px solid var(--divider);
+      border-radius: 4px;
       display: none;
+      box-shadow: 0 0 0 1px rgba(4,4,5,0.15);
     }
-
-    .upload-status.error {
-      color: var(--danger);
-      background: #fff4f7;
-      border-color: rgba(175, 27, 63, 0.3);
+    .message:hover .msg-actions { display: flex; }
+    .msg-action-btn {
+      padding: 4px 8px; cursor: pointer; color: var(--text-muted); font-size: 14px;
     }
+    .msg-action-btn:hover { background-color: var(--channel-hover); color: var(--text-normal); }
+    .msg-action-btn.delete:hover { color: #ed4245; }
 
-    .toast {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.8);
-      color: #fff;
-      padding: 10px 16px;
+    .reactions-zone { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+    .reaction-btn {
+      background: var(--channel-hover);
+      border: 1px solid transparent;
       border-radius: 8px;
-      font-size: 0.9rem;
-      z-index: 9999;
-      animation: slideUp 300ms ease-out;
-    }
-
-    @keyframes slideUp {
-      from { 
-        opacity: 0;
-        transform: translateX(-50%) translateY(20px);
-      }
-      to { 
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-      }
-    }
-
-    .send-btn {
-      border: none;
-      background: linear-gradient(140deg, var(--accent) 0%, #15915a 100%);
-      color: #fff;
-      padding: 12px 18px;
-      border-radius: 12px;
+      padding: 2px 6px;
+      font-size: 14px;
+      color: var(--text-normal);
       cursor: pointer;
-      font-weight: 700;
-      letter-spacing: 0.01em;
-      transition: transform 120ms ease, filter 120ms ease;
+    }
+    .reaction-btn:hover { border-color: var(--text-muted); }
+    .emoji-picker-btn {
+      background: none; border: 1px dashed var(--divider);
+      border-radius: 8px; padding: 2px 6px; cursor: pointer;
+      color: var(--text-normal);
+    }
+    .emoji-picker-btn:hover { border-color: var(--text-muted); }
+
+    .chat-input-wrapper {
+      padding: 12px 16px 16px;
+      flex-shrink: 0;
+    }
+    .chat-input-box {
+      background-color: var(--input-bg);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      gap: 12px;
       min-height: 44px;
-      min-width: 44px;
+      width: 100%;
+    }
+    .attach-btn {
+      background: #b9bbbe; 
+      color: var(--input-bg);
+      width: 28px; 
+      height: 28px; 
+      border-radius: 50%;
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      font-weight: bold; 
+      cursor: pointer; 
+      border: none; 
+      font-size: 18px;
+      flex-shrink: 0;
+      touch-action: manipulation;
+      -webkit-appearance: none;
+      -webkit-tap-highlight-color: transparent;
+      padding: 0;
+    }
+    .attach-btn:active { transform: scale(0.95); }
+    .attach-btn:hover { background: #dcddde; }
+    #messageInput {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-normal);
+      font-size: 16px;
+      outline: none;
+      min-height: 24px;
+      resize: none;
+      -webkit-appearance: none;
+      padding: 4px 0;
+    }
+    #messageInput::placeholder { color: var(--text-muted); }
+    .send-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-normal);
+      font-size: 20px;
+      cursor: pointer;
+      width: 32px;
+      height: 32px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.95rem;
+      flex-shrink: 0;
+      touch-action: manipulation;
+      -webkit-appearance: none;
+      -webkit-tap-highlight-color: transparent;
+      padding: 0;
+    }
+    .send-btn:active { transform: scale(0.9); }
+    .send-btn:hover { opacity: 0.7; }
+    
+    .send-btn {
+      background: transparent; border: none; color: var(--accent);
+      cursor: pointer; font-size: 20px; padding: 0;
+      transition: color 0.2s; display: flex; align-items: center;
+      min-width: 32px; height: 32px; justify-content: center;
+      touch-action: manipulation;
+    }
+    .send-btn:hover { color: var(--accent-hover); }
+    
+    .status-bar { padding-top: 4px; font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between;}
+
+    .mobile-menu-btn {
+      background: transparent; border: none; color: var(--text-muted);
+      cursor: pointer; font-size: 20px; padding: 0;
+      display: none; width: 32px; height: 32px; align-items: center; justify-content: center;
+      transition: color 0.2s;
+      touch-action: manipulation;
+    }
+    .mobile-menu-btn:hover { color: var(--text-normal); }
+
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      top: 48px;
+      right: 12px;
+      background: var(--bg-chat);
+      border: 1px solid var(--divider);
+      border-radius: 8px;
+      z-index: 1001;
+      min-width: 160px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
     }
 
-    .send-btn:hover {
-      transform: translateY(-1px);
-      filter: brightness(1.03);
+    .mobile-menu.active { display: block; }
+
+    .mobile-menu-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      color: var(--text-normal);
+      font-size: 14px;
+      border-bottom: 1px solid var(--divider);
+      transition: background-color 0.2s;
+      white-space: nowrap;
     }
 
-    .send-btn:active {
-      transform: translateY(0);
+    .mobile-menu-item:last-child { border-bottom: none; }
+    .mobile-menu-item:hover { background-color: var(--channel-hover); }
+
+    /* Mobile & Tablet Responsiveness */
+    @media (max-width: 1200px) {
+      .member-list { width: 180px; padding: 16px 4px; }
+      .channel-list { width: 200px; }
     }
 
-    .send-btn:disabled {
-      opacity: 0.65;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .empty {
-      border: 1px dashed var(--line);
-      border-radius: 12px;
-      padding: 16px;
-      text-align: center;
-      color: var(--muted);
-      background: #ffffffa8;
-    }
-
-    @media (max-width: 760px) {
-      .chat-shell {
-        width: 100%;
-        max-height: 100vh;
-        height: 100dvh;
-        border-radius: 0;
-        border: none;
-        box-shadow: none;
-        display: flex;
-        flex-direction: column;
-      }
-
-      body {
-        padding: 0;
-      }
-
-      .header {
-        padding: 12px 14px;
-        gap: 8px;
-      }
-
-      .presence-info {
-        display: none;
-      }
-
-      .title h1 {
-        font-size: 1.1rem;
-      }
-
-      .title p {
-        font-size: 0.8rem;
-      }
-
-      .room {
-        grid-template-columns: 1fr;
-        min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 140px);
-        flex: 1;
-        min-height: 0;
-      }
-
-      .sidebar {
-        border-right: 0;
-        border-bottom: 1px solid var(--line);
-        padding: 12px;
-        max-height: 50px;
-        display: flex;
-        flex-direction: row;
-        gap: 8px;
-        align-items: center;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-      }
-
-      .sidebar > * {
-        flex-shrink: 0;
-      }
-
-      .field {
-        gap: 2px;
-      }
-
-      .field label {
-        display: none;
-      }
-
-      .field input {
-        min-height: 40px;
-        padding: 8px 10px;
-        font-size: 14px;
-        max-width: 120px;
-      }
-
-      #joinRoomBtn {
-        padding: 8px 12px;
-        min-height: 40px;
-        font-size: 0.85rem;
-      }
-
-      .hint {
-        display: none;
-      }
-
-      details {
-        display: none;
-      }
-
-      .messages {
-        padding: 12px;
-        gap: 10px;
-        padding-bottom: 84px;
-        flex: 1;
-        min-height: 0;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-      }
-
-      .message {
-        padding: 10px 10px 8px 10px;
-        margin: 0;
-      }
-
-      .message-actions {
-        top: 4px;
-        right: 4px;
-      }
-
-      .meta {
-        font-size: 0.7rem;
-        padding-right: 22px;
-      }
-
-      .content {
-        font-size: 0.9rem;
-        line-height: 1.4;
-        overflow-wrap: anywhere;
-        word-break: break-word;
-      }
-
-      .composer {
-        padding: 8px;
-        gap: 8px;
-        flex-direction: column;
-        align-items: stretch;
-        padding-bottom: max(8px, env(safe-area-inset-bottom));
-        border-radius: 0;
-        z-index: 20;
-        flex: 0 0 auto;
-      }
-
-      .composer textarea {
-        min-height: 52px;
-        max-height: 96px;
-        font-size: 15px;
-        width: 100%;
-        flex: none;
-      }
-
-      .composer-actions {
-        gap: 6px;
-        width: 100%;
-        margin-left: 0;
-        justify-content: space-between;
-      }
-
-      .file-btn {
-        padding: 8px 10px;
-        min-height: 40px;
-        font-size: 0.8rem;
-        flex: 1;
-      }
-
-      .send-btn {
-        padding: 8px 12px;
-        min-height: 40px;
-        font-size: 0.85rem;
-        flex: 1;
-      }
-
-      .upload-status {
-        font-size: 0.75rem;
-        padding: 4px 8px;
-        margin-top: 4px;
-      }
-
-      .progress-bar-wrapper {
-        margin-top: 4px;
-        height: 2px;
-      }
-
-      .delete-btn {
-        font-size: 0.8rem;
-        padding: 2px 3px;
-      }
-
-      .reactions-zone {
-        gap: 3px;
-        margin-top: 4px;
-      }
-
-      .reaction-btn {
-        padding: 2px 5px;
-        font-size: 0.75rem;
-      }
-
-      .emoji-picker-btn {
-        padding: 2px 3px;
-        font-size: 0.7rem;
-      }
-
-      .status {
-        font-size: 0.7rem;
-        padding: 5px 8px;
-      }
-
-      .attachment img {
-        max-width: 100%;
-      }
-
-      .toast {
-        bottom: max(20px, calc(env(safe-area-inset-bottom) + 10px));
-        font-size: 0.85rem;
-        padding: 8px 14px;
-      }
+    @media (max-width: 768px) {
+      .server-list { width: 60px; }
+      .server-icon { width: 40px; height: 40px; }
+      .channel-list { display: none; }
+      .member-list { display: none; }
+      .discord-app { flex-direction: column; }
+      .chat-area { width: 100%; display: flex; flex-direction: column; }
+      .chat-header { height: 48px; padding: 0 12px; }
+      .chat-title { font-size: 14px; }
+      .chat-tools { display: none; }
+      .mobile-menu-btn { display: flex; }
+      .search-bar { display: none; }
+      .messages-wrapper { padding: 8px 0; flex: 1; overflow-y: auto; }
+      .message { padding: 2px 12px; margin-top: 12px; gap: 8px; }
+      .msg-avatar { width: 32px; height: 32px; }
+      .msg-author { font-size: 14px; }
+      .msg-time { font-size: 11px; }
+      .msg-content { font-size: 14px; }
+      .msg-actions { right: 8px; top: -12px; }
+      .msg-action-btn { padding: 4px 6px; font-size: 12px; min-width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+      .chat-input-wrapper { padding: 8px 12px 12px; flex-shrink: 0; display: flex; flex-direction: column; }
+      .chat-input-box { padding: 10px 12px; gap: 8px; border-radius: 6px; min-height: 40px; }
+      .attach-btn { width: 26px; height: 26px; font-size: 16px; }
+      #messageInput { font-size: 16px; min-height: 28px; }
+      .send-btn { width: 28px; height: 28px; font-size: 18px; }
     }
 
     @media (max-width: 480px) {
-      .header {
-        padding: 10px 12px;
-      }
-
-      .title h1 {
-        font-size: 1rem;
-      }
-
-      .title p {
-        font-size: 0.75rem;
-      }
-
-      .presence-info {
-        display: none;
-      }
-
-      .room {
-        min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 120px);
-        min-height: 0;
-      }
-
-      .sidebar {
-        max-height: 45px;
-      }
-
-      .field input {
-        max-width: 100px;
-        font-size: 13px;
-      }
-
-      .messages {
-        padding: 10px;
-        gap: 8px;
-        padding-bottom: 76px;
-      }
-
-      .message {
-        padding: 8px 8px 7px 8px;
-      }
-
-      .meta {
-        font-size: 0.65rem;
-        padding-right: 18px;
-      }
-
-      .content {
-        font-size: 0.85rem;
-        overflow-wrap: anywhere;
-        word-break: break-word;
-      }
-
-      .composer {
-        padding: 6px;
-        padding-bottom: max(6px, env(safe-area-inset-bottom));
-      }
-
-      .composer textarea {
-        min-height: 48px;
-        max-height: 88px;
-        font-size: 15px;
-      }
-
-      .send-btn,
-      .file-btn {
-        padding: 6px 10px;
-        min-height: 40px;
-        font-size: 0.8rem;
-      }
+      body { font-size: 14px; }
+      .server-list { width: 52px; padding: 8px 0; gap: 4px; }
+      .server-icon { width: 36px; height: 36px; font-size: 18px; }
+      .channel-drawer-toggle { left: 64px; font-size: 20px; }
+      .chat-header { height: 44px; padding: 0 8px; gap: 8px; }
+      .chat-title { font-size: 13px; gap: 4px; }
+      .chat-title span { font-size: 18px; }
+      .mobile-menu-btn { font-size: 18px; }
+      .messages-wrapper { padding: 4px 0; flex: 1; overflow-y: auto; }
+      .message { padding: 2px 8px; margin-top: 10px; gap: 6px; }
+      .msg-avatar { width: 28px; height: 28px; min-width: 28px; }
+      .msg-author { font-size: 13px; }
+      .msg-header { gap: 4px; }
+      .msg-time { font-size: 10px; }
+      .msg-content { font-size: 13px; line-height: 1.25rem; }
+      .msg-actions { right: 8px; top: -12px; }
+      .msg-action-btn { padding: 2px 4px; font-size: 12px; min-width: 24px; height: 24px; }
+      .reactions-zone { gap: 2px; }
+      .reaction-btn { padding: 2px 4px; font-size: 12px; }
+      .chat-input-wrapper { padding: 8px 8px 12px; flex-shrink: 0; display: flex; flex-direction: column; }
+      .chat-input-box { padding: 8px 10px; gap: 6px; border-radius: 4px; min-height: 38px; }
+      .attach-btn { width: 24px; height: 24px; font-size: 14px; }
+      #messageInput { font-size: 14px; min-height: 24px; }
+      .send-btn { width: 26px; height: 26px; font-size: 16px; }
+      .user-section { height: 48px; }
+      .status-bar { flex-direction: column; gap: 2px; font-size: 11px; }
     }
 
-    @supports (padding: max(0px)) {
-      body {
-        padding-left: max(12px, env(safe-area-inset-left));
-        padding-right: max(12px, env(safe-area-inset-right));
+    /* Column 4: Member List */
+    .member-list {
+      width: 240px;
+      background-color: var(--bg-member);
+      padding: 24px 8px 16px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .member-group {
+      font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;
+    }
+    .member {
+      display: flex; align-items: center; gap: 12px; padding: 4px; border-radius: 4px; cursor: pointer; transition: background-color 0.2s;
+    }
+    .member:hover { background-color: var(--channel-hover); }
+    
+    .member-avatar { position: relative; }
+    .member-avatar .avatar { width: 32px; height: 32px; }
+    .member-name { font-size: 16px; font-weight: 500; color: var(--text-muted); }
+    .member:hover .member-name { color: var(--text-normal); }
+
+    .attachment-img {
+      max-width: 400px;
+      max-height: 300px;
+      border-radius: 8px;
+      margin-top: 8px;
+      display: block;
+    }
+    .attachment-link { color: #00aff4; text-decoration: none; }
+    .attachment-link:hover { text-decoration: underline; }
+
+    /* Mobile Channel Drawer */
+    .channel-drawer-toggle {
+      display: none;
+      position: absolute;
+      top: 12px;
+      left: 70px;
+      z-index: 1000;
+      background: transparent;
+      border: none;
+      color: var(--text-normal);
+      font-size: 24px;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .channel-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 998;
+    }
+
+    .channel-overlay.active { display: block; }
+
+    @media (max-width: 768px) {
+      .channel-drawer-toggle { display: block; }
+      
+      .channel-list {
+        position: fixed;
+        left: -240px;
+        top: 0;
+        height: 100vh;
+        z-index: 999;
+        transition: left 0.3s ease;
       }
+
+      .channel-list.drawer-open {
+        left: 60px;
+      }
+
+      .discord-app { position: relative; }
     }
   </style>
 </head>
 <body>
-  <main class="chat-shell">
-    <header class="header">
-      <div class="title">
-        <h1>Supabase Realtime Chat</h1>
-        <p>Single HTML file, no custom backend.</p>
+  <div class="discord-app">
+    <!-- Channel Drawer Overlay (Mobile) -->
+    <div class="channel-overlay" id="channelOverlay"></div>
+
+    <!-- Column 1: Server List -->
+    <nav class="server-list">
+      <button class="channel-drawer-toggle" id="channelToggle" title="Mở/đóng phòng chat">☰</button>
+      <div class="server-icon active" title="Direct Messages">
+        <svg fill="white" width="28" height="28" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2zm4.5 14H7.5C6.67 16 6 15.33 6 14.5V9.5C6 8.67 6.67 8 7.5 8H16.5C17.33 8 18 8.67 18 9.5V14.5C18 15.33 17.33 16 16.5 16z"></path></svg>
       </div>
-      <div id="presence" class="presence-info">online: 0</div>
-      <div id="status" class="status">connecting...</div>
-    </header>
+      <div class="server-separator"></div>
+      <div class="server-icon" style="background-color: var(--accent); color: white; border-radius: 16px; font-weight: bold; font-size: 20px;">S1</div>
+      <div class="server-icon" style="background-color: #2d9a6c; color: white; border-radius: 50%; font-weight: bold; font-size: 20px;">S2</div>
+      
+      <div class="server-icon" title="Add a Server" style="color: #23a559; background-color: #36393f; font-size: 24px; font-weight: 300;">+</div>
+      <div class="server-icon" title="Explore" style="color: #23a559; background-color: #36393f; font-size: 24px; font-weight: 300;">🧭</div>
+    </nav>
 
-    <section class="room">
-      <aside class="sidebar">
-        <div class="field">
-          <label for="username">Your name</label>
-          <input id="username" maxlength="24" placeholder="ex: Alex" />
+    <!-- Column 2: Channel List -->
+    <div class="channel-list">
+      <div class="channel-header">
+        Community Server
+        <span style="font-size: 12px;">▼</span>
+      </div>
+      <div class="channels-scroll">
+        <div class="category">
+          <span style="margin-right: 4px; font-size: 10px;"></span> KÊNH CHÁT
         </div>
+        <div class="channel active">
+          <span style="color: var(--text-muted); font-size: 20px;">#</span> general
+        </div>
+        <div class="channel">
+          <span style="color: var(--text-muted); font-size: 20px;">#</span> thảo-luận
+        </div>
+        
+        <div class="category" style="margin-top: 16px;">
+          <span style="margin-right: 4px; font-size: 10px;"></span> KÊNH THOẠI
+        </div>
+        <div class="channel">
+          <span style="color: var(--text-muted); font-size: 16px;">🔊</span> Sảnh chung
+        </div>
+      </div>
+      
+      <div class="user-section">
+        <div class="avatar-wrapper">
+          <div class="avatar" style="background-color: #ed4245;"></div>
+          <div class="status-dot"></div>
+        </div>
+        <div class="user-info">
+          <input type="text" id="username" class="user-name" value="You" />
+          <div class="user-id">#1337</div>
+        </div>
+        <div class="user-controls">
+          <div class="user-btn" title="Mute">🎤</div>
+          <div class="user-btn" title="Deafen">🎧</div>
+          <div class="user-btn" title="Settings">⚙️</div>
+        </div>
+      </div>
+    </div>
 
-        <p class="hint">
-          Messages are stored in Supabase table <b>public.messages</b> and synced in realtime.
-        </p>
+    <!-- Column 3: Chat Area -->
+    <main class="chat-area">
+      <div class="chat-header">
+        <div class="chat-title">
+          <span>#</span> general
+        </div>
+        <div class="chat-tools">
+          <div>🔔</div>
+          <div>📌</div>
+          <div>👥</div>
+          <div class="search-bar">Search <span>🔍</span></div>
+          <div>📥</div>
+          <div>❓</div>
+        </div>
+        <button class="mobile-menu-btn" id="mobileMenuBtn" title="Tùy chọn">⋮</button>
+      </div>
 
-        <details>
-          <summary>Run this SQL in Supabase (create or upgrade)</summary>
-          <pre>create table if not exists public.messages (
-  id bigint generated by default as identity primary key,
-  room_id text not null default 'general' check (char_length(room_id) between 1 and 32),
-  username text not null check (char_length(username) between 1 and 24),
-  content text not null check (char_length(content) between 1 and 500),
-  created_at timestamptz not null default now()
-);
-
-alter table public.messages add column if not exists room_id text;
-alter table public.messages add column if not exists username text;
-alter table public.messages add column if not exists content text;
-alter table public.messages add column if not exists created_at timestamptz;
-
-update public.messages set room_id = 'general' where room_id is null;
-update public.messages set username = 'guest' where username is null or username = '';
-update public.messages set content = '[legacy message]' where content is null or content = '';
-update public.messages set created_at = now() where created_at is null;
-
-alter table public.messages alter column room_id set default 'general';
-alter table public.messages alter column room_id set not null;
-alter table public.messages alter column username set default 'guest';
-alter table public.messages alter column username set not null;
-alter table public.messages alter column content set default '[empty]';
-alter table public.messages alter column content set not null;
-alter table public.messages alter column created_at set default now();
-alter table public.messages alter column created_at set not null;
-
-do $$
-begin
-  if exists (
-    select 1
-    from information_schema.columns
-    where table_schema = 'public'
-      and table_name = 'messages'
-      and column_name = 'user_id'
-  ) then
-    alter table public.messages alter column user_id drop not null;
-  end if;
-end $$;
-
-do $$
-begin
-  if not exists (
-    select 1
-    from pg_constraint
-    where conname = 'messages_username_length'
-  ) then
-    alter table public.messages
-    add constraint messages_username_length
-    check (char_length(username) between 1 and 24);
-  end if;
-
-  if not exists (
-    select 1
-    from pg_constraint
-    where conname = 'messages_content_length'
-  ) then
-    alter table public.messages
-    add constraint messages_content_length
-    check (char_length(content) between 1 and 500);
-  end if;
-
-  if not exists (
-    select 1
-    from pg_constraint
-    where conname = 'messages_room_id_length'
-  ) then
-    alter table public.messages
-    add constraint messages_room_id_length
-    check (char_length(room_id) between 1 and 32);
-  end if;
-end $$;
-
-create index if not exists messages_room_id_created_at_idx
-on public.messages (room_id, created_at);
-
-alter table public.messages enable row level security;
-
-drop policy if exists "public read messages" on public.messages;
-create policy "public read messages"
-on public.messages
-for select
-using (true);
-
-drop policy if exists "public insert messages" on public.messages;
-create policy "public insert messages"
-on public.messages
-for insert
-to anon
-with check (true);
-
-insert into storage.buckets (id, name, public)
-values ('chat-images', 'chat-images', true)
-on conflict (id)
-do update set
-  name = excluded.name,
-  public = true;
-
-drop policy if exists "public read chat-images" on storage.objects;
-create policy "public read chat-images"
-on storage.objects
-for select
-to public
-using (bucket_id = 'chat-images');
-
-drop policy if exists "public upload chat-images" on storage.objects;
-create policy "public upload chat-images"
-on storage.objects
-for insert
-to public
-with check (bucket_id = 'chat-images');
-
-create table if not exists public.message_reactions (
-  id bigint generated by default as identity primary key,
-  message_id bigint not null,
-  username text not null check (char_length(username) between 1 and 24),
-  emoji text not null check (char_length(emoji) = 1),
-  created_at timestamptz not null default now(),
-  unique(message_id, username, emoji)
-);
-
-alter table public.message_reactions enable row level security;
-
-drop policy if exists "public read reactions" on public.message_reactions;
-create policy "public read reactions"
-on public.message_reactions
-for select
-using (true);
-
-drop policy if exists "public insert reactions" on public.message_reactions;
-create policy "public insert reactions"
-on public.message_reactions
-for insert
-to anon
-with check (true);
-
-drop policy if exists "public delete reactions" on public.message_reactions;
-create policy "public delete reactions"
-on public.message_reactions
-for delete
-to anon
-using (true);</pre>
-        </details>
-      </aside>
-
-      <section class="main">
-        <ul id="messages" class="messages">
-          <li class="empty" id="emptyState">No messages in this room yet. Send the first one.</li>
-        </ul>
-
-        <form id="composer" class="composer" autocomplete="off">
-          <textarea id="messageInput" maxlength="500" placeholder="Type a message..."></textarea>
-          <div class="composer-actions">
-            <input id="fileInput" type="file" hidden />
-            <button id="attachBtn" class="file-btn" type="button">Attach</button>
-            <button id="sendBtn" class="send-btn" type="submit">Send</button>
-          </div>
-          <div id="uploadStatus" class="upload-status"></div>
-          <div id="progressWrapper" class="progress-bar-wrapper" style="display: none;">
-            <div id="progressBar" class="progress-bar"></div>
+      <div class="mobile-menu" id="mobileMenu">
+        <div class="mobile-menu-item" data-action="notify">🔔 Thông báo</div>
+        <div class="mobile-menu-item" data-action="pin">📌 Ghim</div>
+        <div class="mobile-menu-item" data-action="members">👥 Thành viên</div>
+        <div class="mobile-menu-item" data-action="help">❓ Trợ giúp</div>
+      </div>
+      
+      <div class="messages-wrapper" id="messages">
+        <!-- Messages will render here -->
+      </div>
+      
+      <div class="chat-input-wrapper">
+        <form id="composer" autocomplete="off">
+          <div class="chat-input-box">
+            <input type="file" id="fileInput" hidden />
+            <button type="button" id="attachBtn" class="attach-btn" title="Đính kèm">+</button>
+            <input type="text" id="messageInput" placeholder="Gửi tin nhắn đến #general" autocomplete="off" />
+            <button type="submit" class="send-btn" title="Gửi">📤</button>
           </div>
         </form>
-      </section>
-    </section>
-  </main>
+        <div class="status-bar">
+          <div id="typingIndicator" style="display: none;"><span id="typingText"></span></div>
+          <div id="status">Connecting...</div>
+          <div id="presence" style="display: none;"></div>
+          <div id="uploadStatus"></div>
+          <div class="title" style="display:none;"><p></p></div>
+        </div>
+      </div>
+    </main>
 
-  <div id="typingIndicator" class="typing-indicator">
-    <span id="typingText"></span>
-    <span class="typing-dot"></span>
-    <span class="typing-dot"></span>
-    <span class="typing-dot"></span>
+    <!-- Column 4: Member List -->
+    <aside class="member-list">
+        <div class="member-group">TRỰC TUYẾN — <span id="onlineCount">0</span></div>
+      <div id="onlineMembersList" style="display: flex; flex-direction: column; gap: 4px;">
+        <div class="member">
+          <div class="member-avatar">
+            <div class="avatar" style="background-color: var(--accent);"></div>
+            <div class="status-dot"></div>
+          </div>
+          <div class="member-name">You (Guest)</div>
+        </div>
+      </div>
+      
+      <div class="member-group" style="margin-top: 16px;">NGOẠI TUYẾN — 0</div>
+    </aside>
   </div>
 
   <script type="module">
@@ -1074,11 +714,11 @@ using (true);</pre>
     const sendBtnEl = document.getElementById("sendBtn");
     const titleSubtitleEl = document.querySelector(".title p");
     const uploadStatusEl = document.getElementById("uploadStatus");
-    const progressWrapperEl = document.getElementById("progressWrapper");
-    const progressBarEl = document.getElementById("progressBar");
     const presenceEl = document.getElementById("presence");
     const typingIndicatorEl = document.getElementById("typingIndicator");
     const typingTextEl = document.getElementById("typingText");
+    const onlineCountEl = document.getElementById("onlineCount");
+    const onlineMembersListEl = document.getElementById("onlineMembersList");
 
     const renderedIds = new Set();
     const messageReactions = {};
@@ -1092,28 +732,25 @@ using (true);</pre>
 
     const clientUserId = (() => {
       const cached = localStorage.getItem("chat_user_id");
-      if (cached) {
-        return cached;
-      }
-
+      if (cached) return cached;
       const id = crypto.randomUUID();
       localStorage.setItem("chat_user_id", id);
       return id;
     })();
 
-    titleSubtitleEl.textContent = "Single HTML file, no custom backend.";
+    if (titleSubtitleEl) { titleSubtitleEl.textContent = "Discord UI Clone"; }
 
     const ensureEmptyState = () => {
-      const existing = document.getElementById("emptyState");
-      if (existing || messagesEl.children.length > 0) {
-        return;
+      // show a simple empty state banner if there are no messages
+      if (!messagesEl.querySelector('.message')) {
+        const div = document.createElement('div');
+        div.className = 'message';
+        div.style.padding = '24px 16px';
+        div.style.textAlign = 'center';
+        div.style.color = 'var(--text-muted)';
+        div.textContent = 'Welcome to #general — Chưa có tin nhắn.';
+        messagesEl.appendChild(div);
       }
-
-      const li = document.createElement("li");
-      li.className = "empty";
-      li.id = "emptyState";
-      li.textContent = "No messages in this room yet. Send the first one.";
-      messagesEl.appendChild(li);
     };
 
     const clearMessages = () => {
@@ -1123,28 +760,20 @@ using (true);</pre>
     };
 
     const cachedName = localStorage.getItem("chat_name");
-    if (cachedName) {
-      usernameEl.value = cachedName;
-    }
+    if (cachedName) { usernameEl.value = cachedName; }
 
     usernameEl.addEventListener("change", () => {
       localStorage.setItem("chat_name", usernameEl.value.trim());
     });
 
     const formatTime = (isoString) => {
-      try {
-        return new Date(isoString).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      } catch {
-        return "--:--";
-      }
+      try { return new Date(isoString).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }); } 
+      catch { return "--:--"; }
     };
 
     const setStatus = (text, type = "") => {
       statusEl.textContent = text;
-      statusEl.classList.remove("live", "error");
-      if (type) {
-        statusEl.classList.add(type);
-      }
+      statusEl.style.color = type === 'error' ? '#ed4245' : type === 'live' ? '#23a559' : 'var(--text-muted)';
     };
 
     const encodeAttachmentMarker = ({ name, mime, url }) => {
@@ -1152,135 +781,117 @@ using (true);</pre>
     };
 
     const parseAttachmentMarker = (raw) => {
-      if (typeof raw !== "string") {
-        return null;
-      }
-
+      if (typeof raw !== "string") return null;
       const match = raw.match(/^\[\[file:([^:]*):([^:]*):(.+)\]\]$/);
-      if (!match) {
-        return null;
-      }
-
+      if (!match) return null;
       try {
         return {
           name: decodeURIComponent(match[1] || "file"),
           mime: decodeURIComponent(match[2] || "application/octet-stream"),
           url: decodeURIComponent(match[3] || "")
         };
-      } catch {
-        return null;
-      }
+      } catch { return null; }
+    };
+
+    function processMessageContent(content, msgContentEl) {
+        msgContentEl.innerHTML = "";
+        const lines = content.split('\n');
+        for (const line of lines) {
+            const attachment = parseAttachmentMarker(line.trim());
+            if (attachment) {
+                const link = document.createElement("a");
+                link.className = "attachment-link";
+                link.href = attachment.url;
+                link.target = "_blank";
+                link.textContent = attachment.name;
+                msgContentEl.appendChild(link);
+                msgContentEl.appendChild(document.createElement("br"));
+
+                if (attachment.mime.startsWith("image/")) {
+                    const img = document.createElement("img");
+                    img.className = "attachment-img";
+                    img.src = attachment.url;
+                    msgContentEl.appendChild(img);
+                    msgContentEl.appendChild(document.createElement("br"));
+                }
+            } else {
+                msgContentEl.appendChild(document.createTextNode(line));
+                msgContentEl.appendChild(document.createElement("br"));
+            }
+        }
+    }
+
+    const getAvatarColor = (name) => {
+        const colors = ['#5865F2', '#ed4245', '#fee75c', '#ea2652', '#9b59b6', '#23a559'];
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        return colors[Math.abs(hash) % colors.length];
     };
 
     const appendMessage = (message) => {
-      if (hasRoomColumn && message.room_id !== currentRoom) {
-        return;
-      }
-
-      if (!message || renderedIds.has(message.id)) {
-        return;
-      }
+      if (hasRoomColumn && message.room_id !== currentRoom) return;
+      if (!message || renderedIds.has(message.id)) return;
 
       renderedIds.add(message.id);
-      const emptyStateEl = document.getElementById("emptyState");
-      if (emptyStateEl) {
-        emptyStateEl.remove();
-      }
-
-      const li = document.createElement("li");
-      li.className = "message";
-      li.setAttribute("data-message-id", message.id);
-
+      
       const isDeleted = message.content === "[deleted]";
-      if (isDeleted) {
-        li.classList.add("deleted");
-      }
 
-      const actionsBtnContainer = document.createElement("div");
-      actionsBtnContainer.className = "message-actions";
+      const msgDiv = document.createElement("div");
+      msgDiv.className = "message";
+      if (isDeleted) msgDiv.classList.add("deleted");
+      msgDiv.setAttribute("data-message-id", message.id);
 
-      const deleteBtn = document.createElement("button");
-      deleteBtn.type = "button";
-      deleteBtn.className = "delete-btn";
-      deleteBtn.textContent = "✕";
-      deleteBtn.title = "Delete";
-      deleteBtn.onclick = (e) => {
-        e.preventDefault();
-        deleteMessage(message.id, message.username);
-      };
-      actionsBtnContainer.appendChild(deleteBtn);
-
-      const meta = document.createElement("div");
-      meta.className = "meta";
       const sender = message.username || message.user_id || "unknown";
-      const roomLabel = hasRoomColumn ? ` @${escapeHtml(message.room_id || "general")}` : "";
-      const timeValue = hasCreatedAtColumn ? formatTime(message.created_at) : "--:--";
-      meta.innerHTML = `<span>${escapeHtml(sender)}${roomLabel}</span><span>${timeValue}</span>`;
+      
+      const avatarDiv = document.createElement("div");
+      avatarDiv.className = "msg-avatar";
+      avatarDiv.style.backgroundColor = getAvatarColor(sender);
 
-      const content = document.createElement("p");
-      content.className = "content";
+      const contentWrapper = document.createElement("div");
+      contentWrapper.className = "msg-content-wrapper";
+
+      const header = document.createElement("div");
+      header.className = "msg-header";
+      header.innerHTML = `<span class="msg-author">${escapeHtml(sender)}</span><span class="msg-time">${formatTime(message.created_at)}</span>`;
+
+      const contentEl = document.createElement("div");
+      contentEl.className = "msg-content";
+      
       const rawContent = message.content || message.message || "";
-      const attachment = parseAttachmentMarker(rawContent);
-      if (!attachment) {
-        content.textContent = rawContent;
+      if (isDeleted) {
+        contentEl.textContent = "Tin nhắn này đã bị xóa.";
       } else {
-        content.textContent = `${attachment.name} (${attachment.mime})`;
-
-        const box = document.createElement("div");
-        box.className = "attachment";
-
-        const link = document.createElement("a");
-        link.href = attachment.url;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.textContent = "Open file";
-
-        box.appendChild(link);
-
-        if (attachment.mime.startsWith("image/")) {
-          const img = document.createElement("img");
-          img.loading = "lazy";
-          img.alt = attachment.name;
-          img.src = attachment.url;
-          box.appendChild(img);
-        }
-
-        content.appendChild(box);
+        processMessageContent(rawContent, contentEl);
       }
 
-      li.appendChild(actionsBtnContainer);
-      li.append(meta, content);
+      contentWrapper.appendChild(header);
+      contentWrapper.appendChild(contentEl);
 
-      li.addEventListener("dblclick", () => {
-        copyMessageContent(li);
-      });
+      const actionsDiv = document.createElement("div");
+      actionsDiv.className = "msg-actions";
+      
+      const addReactionBtn = document.createElement("div");
+      addReactionBtn.className = "msg-action-btn";
+      addReactionBtn.textContent = "😀";
+      addReactionBtn.onclick = () => addReaction(message.id, "👍");
 
-      li.addEventListener("touchstart", () => {
-        longPressTimer = setTimeout(() => {
-          copyMessageContent(li);
-          longPressTimer = null;
-        }, 500);
-      });
+      const deleteBtn = document.createElement("div");
+      deleteBtn.className = "msg-action-btn delete";
+      deleteBtn.innerHTML = "🗑️";
+      deleteBtn.onclick = () => deleteMessage(message.id, message.username);
 
-      li.addEventListener("touchend", () => {
-        if (longPressTimer) {
-          clearTimeout(longPressTimer);
-          longPressTimer = null;
-        }
-      });
+      actionsDiv.appendChild(addReactionBtn);
+      actionsDiv.appendChild(deleteBtn);
 
-      li.addEventListener("touchmove", () => {
-        if (longPressTimer) {
-          clearTimeout(longPressTimer);
-          longPressTimer = null;
-        }
-      });
+      msgDiv.appendChild(avatarDiv);
+      msgDiv.appendChild(contentWrapper);
+      msgDiv.appendChild(actionsDiv);
 
       loadReactionsForMessage(message.id).then(() => {
-        renderReactionsForMessage(li, message.id);
+        renderReactionsForMessage(contentWrapper, message.id);
       });
 
-      messagesEl.appendChild(li);
+      messagesEl.appendChild(msgDiv);
       messagesEl.scrollTop = messagesEl.scrollHeight;
     };
 
@@ -1294,32 +905,28 @@ using (true);</pre>
 
     const setUploadStatus = (text, isError = false) => {
       uploadStatusEl.textContent = text;
-      uploadStatusEl.classList.toggle("error", isError);
-      uploadStatusEl.style.display = text ? "block" : "none";
-    };
-
-    const setProgress = (percent) => {
-      progressBarEl.style.width = `${Math.max(0, Math.min(100, percent))}%`;
-      progressWrapperEl.style.display = percent > 0 && percent < 100 ? "block" : "none";
-    };
-
-    const showToast = (message) => {
-      const toast = document.createElement("div");
-      toast.className = "toast";
-      toast.textContent = message;
-      document.body.appendChild(toast);
-
-      setTimeout(() => {
-        toast.style.animation = "none";
-        toast.style.opacity = "0";
-        setTimeout(() => toast.remove(), 300);
-      }, 1500);
+      uploadStatusEl.style.color = isError ? '#ed4245' : 'var(--text-muted)';
     };
 
     const updatePresenceInfo = () => {
       const count = Object.keys(presenceUsers).length;
-      presenceEl.textContent = `online: ${count}`;
-      presenceEl.classList.toggle("active", count > 0);
+      onlineCountEl.textContent = count;
+      
+      onlineMembersListEl.innerHTML = '';
+      
+      Object.keys(presenceUsers).forEach(key => {
+          const user = presenceUsers[key];
+          const div = document.createElement("div");
+          div.className = "member";
+          div.innerHTML = `
+            <div class="member-avatar">
+              <div class="avatar" style="background-color: ${getAvatarColor(user.username)};"></div>
+              <div class="status-dot"></div>
+            </div>
+            <div class="member-name">${escapeHtml(user.username)}</div>
+          `;
+          onlineMembersListEl.appendChild(div);
+      });
     };
 
     const updateTypingIndicator = () => {
@@ -1328,18 +935,13 @@ using (true);</pre>
         .map((u) => u.username);
 
       if (typingUsers.length === 0) {
-        typingIndicatorEl.classList.remove("show");
+        typingIndicatorEl.style.display = "none";
         return;
       }
 
       const names = typingUsers.join(", ");
-      const text =
-        typingUsers.length === 1
-          ? `${names} is typing`
-          : `${typingUsers.length} people typing`;
-
-      typingTextEl.textContent = text;
-      typingIndicatorEl.classList.add("show");
+      typingTextEl.textContent = typingUsers.length === 1 ? `${names} đang gõ...` : `${typingUsers.length} people typing...`;
+      typingIndicatorEl.style.display = "block";
     };
 
     let typingTimeout = null;
@@ -1356,150 +958,65 @@ using (true);</pre>
       });
     };
 
-    const copyMessageContent = (messageEl) => {
-      let textContent = "";
-
-      const contentEl = messageEl.querySelector(".content");
-      if (contentEl) {
-        const metaEl = messageEl.querySelector(".meta");
-        const senderText = metaEl ? metaEl.textContent : "";
-
-        const attachmentEl = contentEl.querySelector(".attachment a");
-        if (attachmentEl) {
-          const url = attachmentEl.href;
-          const fileName = contentEl.textContent.split("(")[0].trim();
-          textContent = `${senderText}\n${fileName}\n${url}`;
-        } else {
-          textContent = contentEl.textContent;
-        }
-      }
-
-      if (!textContent) {
-        return;
-      }
-
-      navigator.clipboard.writeText(textContent).then(
-        () => {
-          showToast("Copied!");
-        },
-        () => {
-          showToast("Failed to copy");
-        }
-      );
-    };
-
-    let longPressTimer = null;
-
     const deleteMessage = async (messageId, messageUsername) => {
       if (messageUsername !== (usernameEl.value.trim() || "guest")) {
-        setStatus("can only delete own messages", "error");
+        setStatus("Chỉ có thể xóa tin nhắn của chính bạn", "error");
         return;
       }
-
-      const { error } = await supabase
-        .from("messages")
-        .update({ content: "[deleted]" })
-        .eq("id", messageId);
-
-      if (error) {
-        console.error(error);
-        setStatus("delete failed", "error");
-      }
+      const { error } = await supabase.from("messages").update({ content: "[deleted]" }).eq("id", messageId);
+      if (error) setStatus("Xóa thất bại", "error");
     };
 
     const loadReactionsForMessage = async (messageId) => {
-      const { data, error } = await supabase
-        .from("message_reactions")
-        .select("*")
-        .eq("message_id", messageId);
-
-      if (error) {
-        console.error(error);
-        return [];
-      }
-
+      const { data, error } = await supabase.from("message_reactions").select("*").eq("message_id", messageId);
+      if (error) return [];
       messageReactions[messageId] = data || [];
       return data || [];
     };
 
     const addReaction = async (messageId, emoji) => {
       const username = usernameEl.value.trim() || "guest";
-
-      const { error } = await supabase
-        .from("message_reactions")
-        .insert({ message_id: messageId, username, emoji });
-
+      const { error } = await supabase.from("message_reactions").insert({ message_id: messageId, username, emoji });
       if (error && error.code === "23505") {
-        await supabase
-          .from("message_reactions")
-          .delete()
-          .eq("message_id", messageId)
-          .eq("username", username)
-          .eq("emoji", emoji);
-      } else if (error) {
-        console.error(error);
+        await supabase.from("message_reactions").delete().eq("message_id", messageId).eq("username", username).eq("emoji", emoji);
       }
-
       await loadReactionsForMessage(messageId);
-      const el = document.querySelector(`[data-message-id="${messageId}"]`);
-      if (el) {
-        renderReactionsForMessage(el, messageId);
-      }
+      const el = document.querySelector(`[data-message-id="${messageId}"] .msg-content-wrapper`);
+      if (el) renderReactionsForMessage(el, messageId);
     };
 
-    const renderReactionsForMessage = (messageEl, messageId) => {
-      let zone = messageEl.querySelector(".reactions-zone");
+    const renderReactionsForMessage = (contentWrapper, messageId) => {
+      let zone = contentWrapper.querySelector(".reactions-zone");
       if (!zone) {
         zone = document.createElement("div");
         zone.className = "reactions-zone";
-        messageEl.appendChild(zone);
+        contentWrapper.appendChild(zone);
       }
       zone.innerHTML = "";
 
       const reactions = messageReactions[messageId] || [];
       const grouped = {};
-      reactions.forEach((r) => {
-        grouped[r.emoji] = (grouped[r.emoji] || 0) + 1;
-      });
+      reactions.forEach((r) => grouped[r.emoji] = (grouped[r.emoji] || 0) + 1);
 
       Object.entries(grouped).forEach(([emoji, count]) => {
         const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "reaction-btn";
-        btn.textContent = `${emoji} ${count}`;
-        btn.onclick = (e) => {
-          e.preventDefault();
-          addReaction(messageId, emoji);
-        };
+        btn.type = "button"; btn.className = "reaction-btn"; btn.textContent = `${emoji} ${count}`;
+        btn.onclick = (e) => { e.preventDefault(); addReaction(messageId, emoji); };
         zone.appendChild(btn);
       });
 
-      const emojiBtn = document.createElement("button");
-      emojiBtn.type = "button";
-      emojiBtn.className = "emoji-picker-btn";
-      emojiBtn.textContent = "😀";
-      emojiBtn.onclick = (e) => {
-        e.preventDefault();
-        const emojis = ["👍", "❤️", "😂", "🔥", "😍", "🎉"];
-        const chosen = emojis[Math.floor(Math.random() * emojis.length)];
-        addReaction(messageId, chosen);
-      };
-      zone.appendChild(emojiBtn);
+      if (Object.keys(grouped).length > 0) {
+        const emojiBtn = document.createElement("button");
+        emojiBtn.type = "button"; emojiBtn.className = "emoji-picker-btn"; emojiBtn.textContent = "😀+";
+        emojiBtn.onclick = (e) => { e.preventDefault(); addReaction(messageId, ["❤️", "😂", "🔥", "😍", "🎉"][Math.floor(Math.random() * 5)]); };
+        zone.appendChild(emojiBtn);
+      }
     };
 
     const loadInitialMessages = async () => {
-      let result = await supabase
-        .from("messages")
-        .select("*")
-        .order("id", { ascending: true })
-        .limit(100);
-
-      if (result.error) {
-        setStatus("load failed", "error");
-        console.error(result.error);
-        return;
-      }
-
+      let result = await supabase.from("messages").select("*").order("id", { ascending: true }).limit(100);
+      if (result.error) { setStatus("Load failed", "error"); return; }
+      
       const rows = result.data || [];
       if (rows.length > 0) {
         const sample = rows[0];
@@ -1510,319 +1027,240 @@ using (true);</pre>
         hasUserIdColumn = Object.prototype.hasOwnProperty.call(sample, "user_id");
       }
 
-      const { data, error } = result;
-
-      if (error) {
-        setStatus("load failed", "error");
-        console.error(error);
-        return;
-      }
-
-      const filtered = hasRoomColumn ? (data || []).filter((m) => m.room_id === currentRoom) : (data || []);
+      const filtered = hasRoomColumn ? rows.filter((m) => m.room_id === currentRoom) : rows;
       filtered.forEach(appendMessage);
-      ensureEmptyState();
     };
 
     const tryInsertMessage = async (basePayload) => {
       const payload = { ...basePayload };
-
       for (let i = 0; i < 5; i += 1) {
         const { error } = await supabase.from("messages").insert(payload);
-        if (!error) {
-          return null;
-        }
-
+        if (!error) return null;
+        
         const message = String(error.message || "").toLowerCase();
         if (error.code === "42703") {
-          if (message.includes("room_id")) {
-            delete payload.room_id;
-            hasRoomColumn = false;
-            continue;
-          }
-          if (message.includes("username")) {
-            delete payload.username;
-            hasUsernameColumn = false;
-            continue;
-          }
-          if (message.includes("content")) {
-            delete payload.content;
-            hasContentColumn = false;
-            continue;
-          }
-          if (message.includes("created_at")) {
-            delete payload.created_at;
-            hasCreatedAtColumn = false;
-            continue;
-          }
-          if (message.includes("user_id")) {
-            delete payload.user_id;
-            hasUserIdColumn = false;
-            continue;
-          }
+          if (message.includes("room_id")) { delete payload.room_id; hasRoomColumn = false; continue; }
+          if (message.includes("username")) { delete payload.username; hasUsernameColumn = false; continue; }
+          if (message.includes("content")) { delete payload.content; hasContentColumn = false; continue; }
+          if (message.includes("created_at")) { delete payload.created_at; hasCreatedAtColumn = false; continue; }
+          if (message.includes("user_id")) { delete payload.user_id; hasUserIdColumn = false; continue; }
         }
-
-        if (error.code === "23502" && message.includes("user_id")) {
-          payload.user_id = clientUserId;
-          hasUserIdColumn = true;
-          continue;
-        }
-
+        if (error.code === "23502" && message.includes("user_id")) { payload.user_id = clientUserId; hasUserIdColumn = true; continue; }
         return error;
       }
-
       return { message: "insert failed after compatibility retries" };
     };
 
-    const sanitizeFilename = (name) => {
-      return String(name || "file")
-        .replace(/[^a-zA-Z0-9._-]/g, "_")
-        .slice(0, 80);
-    };
+    const sanitizeFilename = (name) => String(name || "file").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80);
 
     const uploadAndSendFile = async (file) => {
-      if (!file) {
-        return;
-      }
-
+      if (!file) return;
       const username = usernameEl.value.trim() || "guest";
       localStorage.setItem("chat_name", username);
 
       const safeName = sanitizeFilename(file.name);
       const objectPath = `${currentRoom}/${Date.now()}-${crypto.randomUUID()}-${safeName}`;
 
-      sendBtnEl.disabled = true;
       attachBtnEl.disabled = true;
-      setUploadStatus(`uploading ${file.name}...`);
-      setProgress(10);
+      setUploadStatus(`Đang tải lên ${file.name}...`);
 
       let uploadError = null;
       try {
-        const { error } = await supabase.storage
-          .from(STORAGE_BUCKET)
-          .upload(objectPath, file, {
-            upsert: false,
-            contentType: file.type || "application/octet-stream"
-          });
-
-        if (error) {
-          uploadError = error;
-        } else {
-          setProgress(80);
-          setUploadStatus(`processing ${file.name}...`);
-        }
-      } catch (err) {
-        uploadError = err;
-      }
+        const { error } = await supabase.storage.from(STORAGE_BUCKET).upload(objectPath, file, { upsert: false, contentType: file.type || "application/octet-stream" });
+        if (error) uploadError = error;
+      } catch (err) { uploadError = err; }
 
       if (uploadError) {
-        sendBtnEl.disabled = false;
         attachBtnEl.disabled = false;
-        setUploadStatus("upload failed, retrying...", true);
-        setProgress(0);
-        console.error(uploadError);
-
-        setTimeout(() => {
-          setUploadStatus("", false);
-        }, 2000);
+        setUploadStatus("Tải lên thất bại", true);
+        setTimeout(() => setUploadStatus(""), 2000);
         return;
       }
 
       const { data: publicData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(objectPath);
-      const marker = encodeAttachmentMarker({
-        name: file.name,
-        mime: file.type || "application/octet-stream",
-        url: publicData.publicUrl
-      });
-
-      const payload = {
-        content: marker,
-        username,
-        room_id: currentRoom,
-        user_id: clientUserId
-      };
+      const marker = encodeAttachmentMarker({ name: file.name, mime: file.type || "application/octet-stream", url: publicData.publicUrl });
+      const payload = { content: marker, username, room_id: currentRoom, user_id: clientUserId };
 
       const insertError = await tryInsertMessage(payload);
-      sendBtnEl.disabled = false;
       attachBtnEl.disabled = false;
 
-      if (insertError) {
-        setUploadStatus("file sent but message failed", true);
-        console.error(insertError);
-
-        setTimeout(() => {
-          setUploadStatus("", false);
-        }, 2000);
-        return;
-      }
-
-      setProgress(100);
-      setUploadStatus(`✓ ${file.name} sent`);
+      if (insertError) { setUploadStatus("Gửi file thất bại", true); setTimeout(() => setUploadStatus(""), 2000); return; }
+      
+      setUploadStatus(`✓ Đã gửi ${file.name}`);
       fileInputEl.value = "";
       messageInputEl.focus();
-
-      setTimeout(() => {
-        setProgress(0);
-        setUploadStatus("", false);
-      }, 1500);
+      setTimeout(() => setUploadStatus(""), 1500);
     };
 
-    attachBtnEl.addEventListener("click", () => {
-      fileInputEl.click();
-    });
-
-    fileInputEl.addEventListener("change", async () => {
-      const file = fileInputEl.files && fileInputEl.files[0];
-      await uploadAndSendFile(file);
-    });
+    attachBtnEl.addEventListener("click", () => fileInputEl.click());
+    fileInputEl.addEventListener("change", async () => { const file = fileInputEl.files && fileInputEl.files[0]; await uploadAndSendFile(file); });
 
     messageInputEl.addEventListener("input", () => {
       const hasText = messageInputEl.value.trim().length > 0;
-
       if (hasText) {
         broadcastTyping(true);
         if (typingTimeout) clearTimeout(typingTimeout);
-        typingTimeout = setTimeout(() => {
-          broadcastTyping(false);
-        }, 1500);
-      } else {
-        broadcastTyping(false);
-      }
-    });
-
-    messagesEl.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      messagesEl.classList.add("drag-over");
-    });
-
-    messagesEl.addEventListener("dragleave", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      messagesEl.classList.remove("drag-over");
-    });
-
-    messagesEl.addEventListener("drop", async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      messagesEl.classList.remove("drag-over");
-
-      const files = e.dataTransfer.files;
-      if (files && files[0]) {
-        await uploadAndSendFile(files[0]);
-      }
+        typingTimeout = setTimeout(() => broadcastTyping(false), 1500);
+      } else { broadcastTyping(false); }
     });
 
     composerEl.addEventListener("submit", async (event) => {
       event.preventDefault();
-
       const username = usernameEl.value.trim() || "guest";
       const content = messageInputEl.value.trim();
-
-      if (!content) {
-        return;
-      }
+      if (!content) return;
 
       localStorage.setItem("chat_name", username);
-      sendBtnEl.disabled = true;
-
-      const payload = {
-        content,
-        username,
-        room_id: currentRoom,
-        user_id: clientUserId
-      };
+      messageInputEl.value = ""; // clear instantly for real feel
+      
+      const payload = { content, username, room_id: currentRoom, user_id: clientUserId };
       const error = await tryInsertMessage(payload);
 
-      sendBtnEl.disabled = false;
-
-      if (error) {
-        const msg = String(error.message || "").toLowerCase();
-        if (msg.includes("username") || msg.includes("content") || msg.includes("created_at") || msg.includes("room_id") || msg.includes("user_id")) {
-          setStatus("schema mismatch: run SQL upgrade block", "error");
-        } else {
-          setStatus("send failed", "error");
-        }
-        console.error(error);
-        return;
-      }
-
-      messageInputEl.value = "";
+      if (error) { setStatus("Gửi thất bại", "error"); }
       messageInputEl.focus();
     });
 
-    presenceChannel = supabase.channel(`chat-presence:${currentRoom}`, {
-      config: {
-        broadcast: { ack: true },
-        presence: { key: clientUserId }
-      }
-    });
-
+    presenceChannel = supabase.channel(`chat-presence:${currentRoom}`, { config: { broadcast: { ack: true }, presence: { key: clientUserId } } });
     presenceChannel.on("presence", { event: "sync" }, () => {
       presenceUsers.clear();
       Object.entries(presenceChannel.presenceState()).forEach(([key, states]) => {
-        if (Array.isArray(states) && states[0]) {
-          const user = states[0];
-          if (user.room === currentRoom) {
-            presenceUsers[key] = user;
-          }
+        if (Array.isArray(states) && states[0] && states[0].room === currentRoom) {
+          presenceUsers[key] = states[0];
         }
       });
       updatePresenceInfo();
       updateTypingIndicator();
     });
-
-    presenceChannel.on("presence", { event: "join" }, () => {
-      updatePresenceInfo();
-      updateTypingIndicator();
-    });
-
-    presenceChannel.on("presence", { event: "leave" }, () => {
-      updatePresenceInfo();
-      updateTypingIndicator();
-    });
-
+    presenceChannel.on("presence", { event: "join" }, () => { updatePresenceInfo(); updateTypingIndicator(); });
+    presenceChannel.on("presence", { event: "leave" }, () => { updatePresenceInfo(); updateTypingIndicator(); });
     presenceChannel.subscribe(async (status) => {
       if (status === "SUBSCRIBED") {
         const username = usernameEl.value.trim() || "guest";
-        await presenceChannel.track({
-          username,
-          room: currentRoom,
-          typing: false,
-          online_at: new Date().toISOString()
-        });
+        await presenceChannel.track({ username, room: currentRoom, typing: false, online_at: new Date().toISOString() });
       }
     });
 
-    const channel = supabase
-      .channel("realtime-chat-room")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages"
-        },
-        (payload) => appendMessage(payload.new)
-      )
+    const channel = supabase.channel("realtime-chat-room")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => appendMessage(payload.new))
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages" }, (payload) => {
+          // Handle deleted messages dynamically by reloading or updating the DOM
+          const msgEl = document.querySelector(`[data-message-id="${payload.new.id}"]`);
+          if (msgEl) {
+              if (payload.new.content === "[deleted]") {
+                  msgEl.classList.add("deleted");
+                  const contentEl = msgEl.querySelector(".msg-content");
+                  if (contentEl) contentEl.textContent = "Tin nhắn này đã bị xóa.";
+              }
+          }
+      })
       .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          setStatus("realtime: connected", "live");
-        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          setStatus("realtime error", "error");
-        } else {
-          setStatus(`realtime: ${status.toLowerCase()}`);
-        }
+        if (status === "SUBSCRIBED") setStatus("Realtime: Connected", "live");
+        else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") setStatus("Realtime Error", "error");
       });
 
     window.addEventListener("beforeunload", async () => {
       await supabase.removeChannel(channel);
-      if (presenceChannel) {
-        await supabase.removeChannel(presenceChannel);
+      if (presenceChannel) await supabase.removeChannel(presenceChannel);
+    });
+
+    // Switch active channel/room
+    const chatTitleEl = document.querySelector('.chat-title');
+    const switchRoom = async (room) => {
+      if (!room || room === currentRoom) return;
+      // remove old presence track
+      try { if (presenceChannel) await supabase.removeChannel(presenceChannel); } catch(e) { /* ignore */ }
+      currentRoom = room;
+      // update header
+      if (chatTitleEl) chatTitleEl.innerHTML = `<span>#</span> ${escapeHtml(room)}`;
+      // clear and reload messages for room
+      clearMessages();
+      await loadInitialMessages();
+
+      // create new presence channel for the new room
+      presenceChannel = supabase.channel(`chat-presence:${currentRoom}`, { config: { broadcast: { ack: true }, presence: { key: clientUserId } } });
+      presenceChannel.on("presence", { event: "sync" }, () => {
+        Object.entries(presenceChannel.presenceState()).forEach(([key, states]) => {
+          if (Array.isArray(states) && states[0] && states[0].room === currentRoom) {
+            presenceUsers[key] = states[0];
+          } else { delete presenceUsers[key]; }
+        });
+        updatePresenceInfo();
+        updateTypingIndicator();
+      });
+      presenceChannel.on("presence", { event: "join" }, () => { updatePresenceInfo(); updateTypingIndicator(); });
+      presenceChannel.on("presence", { event: "leave" }, () => { updatePresenceInfo(); updateTypingIndicator(); });
+      presenceChannel.subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          const username = usernameEl.value.trim() || "guest";
+          await presenceChannel.track({ username, room: currentRoom, typing: false, online_at: new Date().toISOString() });
+        }
+      });
+      // update active class on channel list
+      document.querySelectorAll('.channel').forEach(el => el.classList.toggle('active', el.dataset.room === currentRoom));
+    };
+
+    // attach click handlers to channel elements
+    document.querySelectorAll('.channel').forEach((el) => {
+      // ensure each channel element has a room data attribute
+      if (!el.dataset.room) {
+        const text = el.textContent.trim();
+        el.dataset.room = text.split('\n')[0].replace('#', '').trim();
       }
+      el.addEventListener('click', (e) => {
+        const room = el.dataset.room || 'general';
+        switchRoom(room);
+      });
     });
 
     clearMessages();
     loadInitialMessages();
+
+    // Mobile channel drawer toggle
+    const channelToggle = document.getElementById("channelToggle");
+    const channelList = document.querySelector(".channel-list");
+    const channelOverlay = document.getElementById("channelOverlay");
+
+    channelToggle.addEventListener("click", () => {
+      channelList.classList.toggle("drawer-open");
+      channelOverlay.classList.toggle("active");
+    });
+
+    channelOverlay.addEventListener("click", () => {
+      channelList.classList.remove("drawer-open");
+      channelOverlay.classList.remove("active");
+    });
+
+    // Close drawer when clicking a channel
+    document.querySelectorAll(".channel").forEach((ch) => {
+      ch.addEventListener("click", () => {
+        if (window.innerWidth <= 768) {
+          channelList.classList.remove("drawer-open");
+          channelOverlay.classList.remove("active");
+        }
+      });
+    });
+
+    // Mobile menu toggle
+    const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+    const mobileMenu = document.getElementById("mobileMenu");
+
+    mobileMenuBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      mobileMenu.classList.toggle("active");
+    });
+
+    document.addEventListener("click", () => {
+      mobileMenu.classList.remove("active");
+    });
+
+    mobileMenu.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const action = e.target.closest(".mobile-menu-item")?.getAttribute("data-action");
+      if (action) {
+        mobileMenu.classList.remove("active");
+        // Actions can be expanded here
+      }
+    });
   </script>
 </body>
 </html>

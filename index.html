@@ -224,6 +224,7 @@
       display: flex;
       flex-direction: column;
       min-width: 0;
+      min-height: 0;
     }
 
     .chat-header {
@@ -249,6 +250,7 @@
       padding: 16px 0;
       display: flex;
       flex-direction: column;
+      min-height: 0;
     }
     
     .message {
@@ -311,6 +313,9 @@
     .chat-input-wrapper {
       padding: 12px 16px 16px;
       flex-shrink: 0;
+      width: 100%;
+      min-height: auto;
+      height: auto;
     }
     .chat-input-box {
       background-color: var(--input-bg);
@@ -320,6 +325,13 @@
       padding: 12px 16px;
       gap: 12px;
       min-height: 44px;
+      width: 100%;
+      flex-wrap: nowrap;
+      overflow: visible;
+    }
+    #composer {
+      display: flex;
+      flex-direction: column;
       width: 100%;
     }
     .attach-btn {
@@ -351,6 +363,7 @@
       font-size: 16px;
       outline: none;
       min-height: 24px;
+      min-width: 0;
       resize: none;
       -webkit-appearance: none;
       padding: 4px 0;
@@ -359,11 +372,12 @@
     .send-btn {
       background: transparent;
       border: none;
-      color: var(--text-normal);
+      color: var(--accent);
       font-size: 20px;
       cursor: pointer;
       width: 32px;
       height: 32px;
+      min-width: 32px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -372,17 +386,9 @@
       -webkit-appearance: none;
       -webkit-tap-highlight-color: transparent;
       padding: 0;
+      transition: color 0.2s;
     }
     .send-btn:active { transform: scale(0.9); }
-    .send-btn:hover { opacity: 0.7; }
-    
-    .send-btn {
-      background: transparent; border: none; color: var(--accent);
-      cursor: pointer; font-size: 20px; padding: 0;
-      transition: color 0.2s; display: flex; align-items: center;
-      min-width: 32px; height: 32px; justify-content: center;
-      touch-action: manipulation;
-    }
     .send-btn:hover { color: var(--accent-hover); }
     
     .status-bar { padding-top: 4px; font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between;}
@@ -435,14 +441,14 @@
       .server-icon { width: 40px; height: 40px; }
       .channel-list { display: none; }
       .member-list { display: none; }
-      .discord-app { flex-direction: column; }
-      .chat-area { width: 100%; display: flex; flex-direction: column; }
-      .chat-header { height: 48px; padding: 0 12px; }
+      .discord-app { display: flex; flex-direction: row; width: 100%; height: 100%; }
+      .chat-area { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+      .chat-header { height: 48px; padding: 0 12px; flex-shrink: 0; }
       .chat-title { font-size: 14px; }
       .chat-tools { display: none; }
       .mobile-menu-btn { display: flex; }
       .search-bar { display: none; }
-      .messages-wrapper { padding: 8px 0; flex: 1; overflow-y: auto; }
+      .messages-wrapper { padding: 8px 0; flex: 1; overflow-y: auto; min-height: 0; }
       .message { padding: 2px 12px; margin-top: 12px; gap: 8px; }
       .msg-avatar { width: 32px; height: 32px; }
       .msg-author { font-size: 14px; }
@@ -450,11 +456,10 @@
       .msg-content { font-size: 14px; }
       .msg-actions { right: 8px; top: -12px; }
       .msg-action-btn { padding: 4px 6px; font-size: 12px; min-width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
-      .chat-input-wrapper { padding: 8px 12px 12px; flex-shrink: 0; display: flex; flex-direction: column; }
-      .chat-input-box { padding: 10px 12px; gap: 8px; border-radius: 6px; min-height: 40px; }
+      .chat-input-wrapper { padding: 8px 12px 12px; flex-shrink: 0; display: flex; flex-direction: column; width: 100%; }
+      .chat-input-box { padding: 10px 12px; gap: 8px; border-radius: 6px; min-height: 40px; width: 100%; }
       .attach-btn { width: 26px; height: 26px; font-size: 16px; }
       #messageInput { font-size: 16px; min-height: 28px; }
-      .send-btn { width: 28px; height: 28px; font-size: 18px; }
     }
 
     @media (max-width: 480px) {
@@ -462,11 +467,13 @@
       .server-list { width: 52px; padding: 8px 0; gap: 4px; }
       .server-icon { width: 36px; height: 36px; font-size: 18px; }
       .channel-drawer-toggle { left: 64px; font-size: 20px; }
-      .chat-header { height: 44px; padding: 0 8px; gap: 8px; }
+      .discord-app { display: flex; flex-direction: row; width: 100%; height: 100%; }
+      .chat-area { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+      .chat-header { height: 44px; padding: 0 8px; gap: 8px; flex-shrink: 0; }
       .chat-title { font-size: 13px; gap: 4px; }
       .chat-title span { font-size: 18px; }
       .mobile-menu-btn { font-size: 18px; }
-      .messages-wrapper { padding: 4px 0; flex: 1; overflow-y: auto; }
+      .messages-wrapper { padding: 4px 0; flex: 1; overflow-y: auto; min-height: 0; }
       .message { padding: 2px 8px; margin-top: 10px; gap: 6px; }
       .msg-avatar { width: 28px; height: 28px; min-width: 28px; }
       .msg-author { font-size: 13px; }
@@ -477,11 +484,10 @@
       .msg-action-btn { padding: 2px 4px; font-size: 12px; min-width: 24px; height: 24px; }
       .reactions-zone { gap: 2px; }
       .reaction-btn { padding: 2px 4px; font-size: 12px; }
-      .chat-input-wrapper { padding: 8px 8px 12px; flex-shrink: 0; display: flex; flex-direction: column; }
-      .chat-input-box { padding: 8px 10px; gap: 6px; border-radius: 4px; min-height: 38px; }
+      .chat-input-wrapper { padding: 8px 8px 12px; flex-shrink: 0; display: flex; flex-direction: column; width: 100%; }
+      .chat-input-box { padding: 8px 10px; gap: 6px; border-radius: 4px; min-height: 38px; width: 100%; }
       .attach-btn { width: 24px; height: 24px; font-size: 14px; }
       #messageInput { font-size: 14px; min-height: 24px; }
-      .send-btn { width: 26px; height: 26px; font-size: 16px; }
       .user-section { height: 48px; }
       .status-bar { flex-direction: column; gap: 2px; font-size: 11px; }
     }
@@ -677,20 +683,7 @@
     </main>
 
     <!-- Column 4: Member List -->
-    <aside class="member-list">
-        <div class="member-group">TRỰC TUYẾN — <span id="onlineCount">0</span></div>
-      <div id="onlineMembersList" style="display: flex; flex-direction: column; gap: 4px;">
-        <div class="member">
-          <div class="member-avatar">
-            <div class="avatar" style="background-color: var(--accent);"></div>
-            <div class="status-dot"></div>
-          </div>
-          <div class="member-name">You (Guest)</div>
-        </div>
-      </div>
-      
-      <div class="member-group" style="margin-top: 16px;">NGOẠI TUYẾN — 0</div>
-    </aside>
+  
   </div>
 
   <script type="module">

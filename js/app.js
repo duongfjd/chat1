@@ -169,77 +169,106 @@ const switchRoom = async (room) => {
 };
 
 const uploadAndSendFile = async (file) => {
-  if (!file) return;
-
-  const sizeCheck = isValidFileSize(file.size, FILE_CONFIG.MAX_FILE_SIZE);
-  if (!sizeCheck.valid) {
-    showError(sizeCheck.reason, "File quá lớn");
-    fileInputEl.value = "";
-    return;
-  }
-
-  // Check all allowed types
-  const allowedMimes = [
-    ...FILE_CONFIG.ALLOWED_TYPES.image,
-    ...FILE_CONFIG.ALLOWED_TYPES.document,
-    ...FILE_CONFIG.ALLOWED_TYPES.archive
-  ];
-
-  const typeCheck = isValidFileType(file, FILE_CONFIG.ALLOWED_EXTENSIONS, allowedMimes);
-  if (!typeCheck.valid) {
-    showError(typeCheck.reason, "Định dạng file không hợp lệ");
-    fileInputEl.value = "";
-    return;
-  }
-
-  const username = usernameEl.value.trim() || "guest";
-  localStorage.setItem("chat_name", username);
-
-  const safeName = sanitizeFilename(file.name);
-  const objectPath = `${messageManager.currentRoom}/${Date.now()}-${crypto.randomUUID()}-${safeName}`;
-
-  attachBtnEl.disabled = true;
-  setUploadStatus(`⏳ Đang tải lên ${file.name}...`);
-
-  let retries = 3;
-  let uploadError = null;
-
-  while (retries > 0) {
-    try {
-      const result = await supabase.storage.from(STORAGE_BUCKET).upload(objectPath, file, {
-        upsert: false,
-        contentType: file.type || "application/octet-stream"
-      });
-
-      if (!result.error) {
-        uploadError = null;
-        break;
-      }
-
-      uploadError = result.error;
-      retries--;
-
-      if (retries > 0) {
-        setUploadStatus(`⏳ Thử lại (${4 - retries}/3)...`);
-        await new Promise(r => setTimeout(r, 1000));
-      }
-    } catch (err) {
-      uploadError = err;
-      retries--;
-    }
-  }
-
-  attachBtnEl.disabled = false;
-
-  if (uploadError) {
-    setUploadStatus("");
-    showError("Không thể tải file lên. Kiểm tra kết nối và thử lại.", "Tải lên thất bại");
-    fileInputEl.value = "";
+  if (!file) {
+    console.warn("⚠️ No file selected");
     return;
   }
 
   try {
+    console.log("📎 Processing file:", file.name, "Size:", file.size);
+
+    // Validate file size
+    const sizeCheck = isValidFileSize(file.size, FILE_CONFIG.MAX_FILE_SIZE);
+    if (!sizeCheck.valid) {
+      console.warn("❌ Size check failed:", sizeCheck.reason);
+      showError(sizeCheck.reason, "File quá lớn");
+      fileInputEl.value = "";
+      hideFilePreview();
+      return;
+    }
+
+    // Check all allowed types
+    const allowedMimes = [
+      ...FILE_CONFIG.ALLOWED_TYPES.image,
+      ...FILE_CONFIG.ALLOWED_TYPES.document,
+      ...FILE_CONFIG.ALLOWED_TYPES.archive
+    ];
+
+    const typeCheck = isValidFileType(file, FILE_CONFIG.ALLOWED_EXTENSIONS, allowedMimes);
+    if (!typeCheck.valid) {
+      console.warn("❌ Type check failed:", typeCheck.reason);
+      showError(typeCheck.reason, "Định dạng file không hợp lệ");
+      fileInputEl.value = "";
+      hideFilePreview();
+      return;
+    }
+
+    console.log("✅ File validation passed");
+
+    const username = usernameEl.value.trim() || "guest";
+    localStorage.setItem("chat_name", username);
+
+    const safeName = sanitizeFilename(file.name);
+    const objectPath = `${messageManager.currentRoom}/${Date.now()}-${crypto.randomUUID()}-${safeName}`;
+
+    attachBtnEl.disabled = true;
+    messageInputEl.disabled = true;
+    setUploadStatus(`⏳ Đang tải lên ${file.name}...`);
+
+    let retries = 3;
+    let uploadSuccess = false;
+
+    while (retries > 0) {
+      try {
+        console.log(`📤 Upload attempt ${4 - retries}/3...`);
+        const result = await supabase.storage.from(STORAGE_BUCKET).upload(objectPath, file, {
+          upsert: false,
+          contentType: file.type || "application/octet-stream"
+        });
+
+        if (!result.error) {
+          uploadSuccess = true;
+          console.log("✅ Upload successful");
+          break;
+        }
+
+        console.warn("⚠️ Upload error:", result.error?.message);
+        retries--;
+
+        if (retries > 0) {
+          setUploadStatus(`⏳ Thử lại (${4 - retries}/3)...`);
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      } catch (err) {
+        console.error("❌ Upload exception:", err);
+        retries--;
+
+        if (retries > 0) {
+          setUploadStatus(`⏳ Thử lại (${4 - retries}/3)...`);
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      }
+    }
+
+    attachBtnEl.disabled = false;
+    messageInputEl.disabled = false;
+
+    if (!uploadSuccess) {
+      console.error("❌ Upload failed after 3 retries");
+      setUploadStatus("");
+      showError("Không thể tải file lên. Kiểm tra kết nối và thử lại.", "Tải lên thất bại");
+      fileInputEl.value = "";
+      hideFilePreview();
+      return;
+    }
+
+    console.log("📝 Creating message with file attachment...");
+
     const { data: publicData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(objectPath);
+    if (!publicData?.publicUrl) {
+      throw new Error("Could not get public URL for uploaded file");
+    }
+
     const marker = encodeAttachmentMarker({
       name: file.name,
       mime: file.type || "application/octet-stream",
@@ -250,20 +279,31 @@ const uploadAndSendFile = async (file) => {
     const insertError = await messageManager.tryInsertMessage(payload);
 
     if (insertError) {
-      showError("Gửi file thất bại.", "Lỗi gửi tin");
+      console.error("❌ Message insert failed:", insertError);
+      showError("Gửi file thất bại. Thử lại sau.", "Lỗi gửi tin");
       return;
     }
 
+    console.log("✅ File message sent successfully!");
+
+    // Cleanup on success
     replyBar.setReply(null);
     showSuccess(`✅ Đã gửi ${file.name}`);
     fileInputEl.value = "";
+    messageInputEl.value = "";
+    messageInputEl.style.height = "auto";
     messageInputEl.focus();
     setUploadStatus("");
-
-    // Hide file preview
     hideFilePreview();
+
   } catch (err) {
-    showError("Lỗi xử lý file. Thử lại.", "Lỗi");
+    console.error("❌ Unexpected error during file upload:", err);
+    showError("Lỗi xử lý file. Thử lại.", "Lỗi hệ thống");
+    attachBtnEl.disabled = false;
+    messageInputEl.disabled = false;
+    setUploadStatus("");
+    fileInputEl.value = "";
+    hideFilePreview();
   }
 };
 
@@ -308,46 +348,52 @@ messageInputEl.addEventListener("input", () => {
 composerEl.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  // Check if file is selected
-  const file = fileInputEl.files?.[0];
-  if (file) {
-    await uploadAndSendFile(file);
-    return;
+  try {
+    // Check if file is selected
+    const file = fileInputEl.files?.[0];
+    if (file) {
+      console.log("📎 File selected:", file.name, file.size);
+      await uploadAndSendFile(file);
+      return;
+    }
+
+    const content = messageInputEl.value.trim();
+
+    // Validate message
+    if (!content) {
+      showWarning("Nhập tin nhắn trước khi gửi", "Tin nhắn trống");
+      return;
+    }
+
+    if (content.length > FILE_CONFIG.MAX_MESSAGE_LENGTH) {
+      showError(
+        `Tin nhắn quá dài. Tối đa ${FILE_CONFIG.MAX_MESSAGE_LENGTH} ký tự, hiện tại ${content.length}.`,
+        "Tin nhắn quá dài"
+      );
+      return;
+    }
+
+    localStorage.setItem("chat_name", usernameEl.value.trim() || "guest");
+    messageInputEl.value = "";
+    messageInputEl.style.height = "auto";
+
+    const reply = replyBar.getReply();
+    const payload = messageManager.buildMessagePayload(content, reply);
+    const error = await messageManager.tryInsertMessage(payload);
+
+    if (error) {
+      messageInputEl.value = content;
+      if (!navigator.onLine) showNetworkError();
+      else showError("Không gửi được tin nhắn. Thử lại.", "Gửi thất bại");
+      return;
+    }
+
+    replyBar.setReply(null);
+    messageInputEl.focus();
+  } catch (error) {
+    console.error("❌ Form submit error:", error);
+    showError("Lỗi xử lý form. Thử lại sau.", "Lỗi hệ thống");
   }
-
-  const content = messageInputEl.value.trim();
-
-  // Validate message
-  if (!content) {
-    showWarning("Nhập tin nhắn trước khi gửi", "Tin nhắn trống");
-    return;
-  }
-
-  if (content.length > FILE_CONFIG.MAX_MESSAGE_LENGTH) {
-    showError(
-      `Tin nhắn quá dài. Tối đa ${FILE_CONFIG.MAX_MESSAGE_LENGTH} ký tự, hiện tại ${content.length}.`,
-      "Tin nhắn quá dài"
-    );
-    return;
-  }
-
-  localStorage.setItem("chat_name", usernameEl.value.trim() || "guest");
-  messageInputEl.value = "";
-  messageInputEl.style.height = "auto";
-
-  const reply = replyBar.getReply();
-  const payload = messageManager.buildMessagePayload(content, reply);
-  const error = await messageManager.tryInsertMessage(payload);
-
-  if (error) {
-    messageInputEl.value = content;
-    if (!navigator.onLine) showNetworkError();
-    else showError("Không gửi được tin nhắn. Thử lại.", "Gửi thất bại");
-    return;
-  }
-
-  replyBar.setReply(null);
-  messageInputEl.focus();
 });
 
 const realtimeChannel = supabase

@@ -49,6 +49,10 @@ export function showSuccess(message, title = "Thành công") {
   return showToast({ title, message, type: "success" });
 }
 
+export function showWarning(message, title = "Cảnh báo") {
+  return showToast({ title, message, type: "warning", duration: 4000 });
+}
+
 export function showNetworkError() {
   return showError("Không thể kết nối máy chủ. Kiểm tra mạng và thử lại.", "Mất kết nối");
 }

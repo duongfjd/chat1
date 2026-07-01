@@ -607,10 +607,18 @@ body {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   padding: 0;
-  transition: color 0.2s, transform 0.1s;
+  transition: color 0.2s, transform 0.1s, opacity 0.2s;
 }
 
-.send-btn:hover { color: var(--accent-hover); }
+.send-btn:hover:not(:disabled) { 
+  color: var(--accent-hover); 
+}
+
+.send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--text-muted);
+}
 
 .status-bar {
   padding-top: 4px;
@@ -619,6 +627,90 @@ body {
   display: flex;
   justify-content: space-between;
   gap: 8px;
+  align-items: center;
+}
+
+.char-counter {
+  font-size: 11px;
+  color: var(--text-muted);
+  transition: color 0.2s;
+}
+
+.char-counter.caution {
+  color: #faa61a;
+}
+
+.char-counter.warning {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.file-preview {
+  margin-bottom: 8px;
+  background: var(--input-bg);
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  padding: 12px;
+  animation: slide-in 0.2s ease;
+}
+
+.preview-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.preview-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.preview-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.preview-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-size {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.preview-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.preview-close:hover {
+  color: var(--text-normal);
+  background: var(--channel-hover);
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Emoji Picker */

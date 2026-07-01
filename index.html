@@ -100,7 +100,7 @@
           </div>
 
           <div class="chat-input-box">
-            <input type="file" id="fileInput" hidden accept="image/*,.pdf,.txt,.zip" />
+            <input type="file" id="fileInput" hidden accept="image/*,.pdf,.txt,.zip,.rar,.7z,.gif,.webp,.svg" />
             <button type="button" id="attachBtn" class="attach-btn" title="Đính kèm">+</button>
 
             <div class="emoji-picker-anchor" id="emojiInputAnchor">
@@ -114,8 +114,9 @@
 
         <div class="status-bar">
           <div id="typingIndicator" style="display:none;"><span id="typingText"></span></div>
-          <div id="status">Connecting...</div>
+          <div style="flex:1;"></div>
           <div id="uploadStatus"></div>
+          <div id="status">Connecting...</div>
         </div>
       </div>
     </main>

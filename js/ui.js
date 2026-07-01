@@ -208,3 +208,81 @@ export function setupAutoResizeTextarea(inputEl) {
   inputEl?.addEventListener("input", resize);
   return resize;
 }
+
+export function setupCharacterCounter(inputEl, maxLength) {
+  let counter = document.getElementById("charCounter");
+  
+  if (!counter) {
+    counter = document.createElement("div");
+    counter.id = "charCounter";
+    counter.className = "char-counter";
+    const statusBar = document.querySelector(".status-bar");
+    if (statusBar) {
+      statusBar.insertAdjacentElement("afterbegin", counter);
+    }
+  }
+
+  const updateCounter = () => {
+    const length = inputEl.value.length;
+    counter.textContent = `${length}/${maxLength}`;
+    
+    if (length > maxLength * 0.9) {
+      counter.classList.add("warning");
+    } else if (length > maxLength * 0.7) {
+      counter.classList.add("caution");
+      counter.classList.remove("warning");
+    } else {
+      counter.classList.remove("warning", "caution");
+    }
+    
+    // Disable send button if over limit
+    const sendBtn = document.querySelector(".send-btn");
+    if (sendBtn) {
+      sendBtn.disabled = length > maxLength || length === 0;
+    }
+  };
+
+  inputEl?.addEventListener("input", updateCounter);
+  updateCounter();
+  
+  return updateCounter;
+}
+
+export function showFilePreview(file) {
+  let preview = document.getElementById("filePreview");
+  
+  if (!preview) {
+    preview = document.createElement("div");
+    preview.id = "filePreview";
+    preview.className = "file-preview";
+    const chatInputWrapper = document.querySelector(".chat-input-wrapper");
+    if (chatInputWrapper) {
+      chatInputWrapper.insertAdjacentElement("afterbegin", preview);
+    }
+  }
+
+  preview.innerHTML = `
+    <div class="preview-content">
+      <span class="preview-icon">📎</span>
+      <div class="preview-info">
+        <div class="preview-name">${escapeHtml(file.name)}</div>
+        <div class="preview-size">${(file.size / 1024).toFixed(2)} KB</div>
+      </div>
+      <button type="button" class="preview-close" aria-label="Xóa file">✕</button>
+    </div>
+  `;
+
+  const closeBtn = preview.querySelector(".preview-close");
+  closeBtn?.addEventListener("click", () => {
+    preview.remove();
+    const fileInput = document.getElementById("fileInput");
+    if (fileInput) fileInput.value = "";
+  });
+
+  return preview;
+}
+
+export function hideFilePreview() {
+  const preview = document.getElementById("filePreview");
+  if (preview) preview.remove();
+}

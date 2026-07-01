@@ -137,3 +137,43 @@ export const getLastReadStorage = () => {
 export const setLastReadStorage = (data) => {
   localStorage.setItem("chat_last_read", JSON.stringify(data));
 };
+
+export const formatFileSize = (bytes) => {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+};
+
+export const getFileExtension = (filename) => {
+  if (!filename) return "";
+  return filename.split(".").pop().toLowerCase();
+};
+
+export const isValidFileType = (file, allowedExtensions, allowedMimes) => {
+  const ext = getFileExtension(file.name);
+  const mimeType = file.type || "application/octet-stream";
+  
+  // Check extension
+  if (!allowedExtensions.includes(ext)) {
+    return { valid: false, reason: `Định dạng .${ext} không được phép` };
+  }
+  
+  // Check MIME type if provided
+  if (allowedMimes && allowedMimes.length > 0 && !allowedMimes.includes(mimeType)) {
+    return { valid: false, reason: `Loại file không hợp lệ (${mimeType})` };
+  }
+  
+  return { valid: true };
+};
+
+export const isValidFileSize = (fileSize, maxSize) => {
+  if (fileSize > maxSize) {
+    return {
+      valid: false,
+      reason: `File quá lớn. Tối đa ${formatFileSize(maxSize)}, file của bạn ${formatFileSize(fileSize)}`
+    };
+  }
+  return { valid: true };
+};

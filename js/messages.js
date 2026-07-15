@@ -93,8 +93,9 @@ export function createMessageManager({
 
     const addBtn = document.createElement("button");
     addBtn.type = "button";
-    addBtn.className = "emoji-picker-btn";
-    addBtn.textContent = "😀";
+    addBtn.className = "emoji-picker-btn add-reaction-btn";
+    addBtn.innerHTML = "➕";
+    addBtn.title = "Thêm reaction";
     addBtn.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -255,20 +256,24 @@ export function createMessageManager({
 
     const replyBtn = document.createElement("div");
     replyBtn.className = "msg-action-btn";
-    replyBtn.title = "Trả lời";
+    replyBtn.title = "Trả lời trong Thread";
     replyBtn.textContent = "↩️";
     replyBtn.onclick = () => {
-      replyBar.setReply({
-        id: message.id,
-        username: sender,
-        preview: stripMarkers(message.content || "").slice(0, 80)
-      });
+      if (window.openThread) {
+        window.openThread(message.id, sender, stripMarkers(message.content || ""));
+      } else {
+        replyBar.setReply({
+          id: message.id,
+          username: sender,
+          preview: stripMarkers(message.content || "").slice(0, 80)
+        });
+      }
     };
 
     const reactBtn = document.createElement("div");
     reactBtn.className = "msg-action-btn";
     reactBtn.title = "Thêm reaction";
-    reactBtn.textContent = "😀";
+    reactBtn.innerHTML = "➕";
     reactBtn.onclick = (e) => {
       const anchor = document.createElement("span");
       reactBtn.replaceWith(anchor);

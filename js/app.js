@@ -199,23 +199,8 @@ const uploadAndSendFile = async (file) => {
       return;
     }
 
-    // Check all allowed types
-    const allowedMimes = [
-      ...FILE_CONFIG.ALLOWED_TYPES.image,
-      ...FILE_CONFIG.ALLOWED_TYPES.document,
-      ...FILE_CONFIG.ALLOWED_TYPES.archive
-    ];
-
-    const typeCheck = isValidFileType(file, FILE_CONFIG.ALLOWED_EXTENSIONS, allowedMimes);
-    if (!typeCheck.valid) {
-      console.warn("❌ Type check failed:", typeCheck.reason);
-      showError(typeCheck.reason, "Định dạng file không hợp lệ");
-      fileInputEl.value = "";
-      hideFilePreview();
-      return;
-    }
-
-    console.log("✅ File validation passed");
+    // File types are now unrestricted, but we still respect the size limit.
+    console.log("✅ File size validation passed");
 
     const username = usernameEl.value.trim() || "guest";
     localStorage.setItem("chat_name", username);

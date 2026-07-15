@@ -12,6 +12,90 @@
     <div class="channel-overlay" id="channelOverlay"></div>
     <div class="channel-overlay" id="memberOverlay"></div>
 
+    <!-- Drop overlay for Drag and Drop -->
+    <div class="drop-overlay" id="dropOverlay">
+      <div class="drop-content">
+        <div class="drop-icon">📁</div>
+        <h2>Drop files here</h2>
+        <p>PNG JPG GIF PDF ZIP</p>
+      </div>
+    </div>
+
+    <!-- User Profile Card Popup -->
+    <div class="profile-card" id="profileCard">
+      <div class="profile-header"></div>
+      <div class="profile-avatar">
+        <div class="avatar" id="profileAvatar"></div>
+        <div class="status-dot" id="profileStatus"></div>
+      </div>
+      <div class="profile-body">
+        <h3 id="profileName">Username</h3>
+        <p class="profile-role">Vai trò: <span id="profileRoleBadge">Member</span></p>
+        <div class="profile-section">
+          <h4>VỀ TÔI</h4>
+          <p>Đang khám phá server...</p>
+        </div>
+        <div class="profile-section">
+          <h4>THAM GIA TỪ</h4>
+          <p>Hôm nay</p>
+        </div>
+        <div class="profile-actions">
+          <button class="profile-btn primary">💬 Nhắn tin</button>
+          <button class="profile-btn">➕ Kết bạn</button>
+          <button class="profile-btn danger">🚫 Chặn</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Command Palette (Ctrl+K) -->
+    <div class="palette-overlay" id="commandPalette">
+      <div class="palette-modal">
+        <input type="text" class="palette-input" placeholder="Tìm kiếm kênh, người dùng hoặc gõ > để dùng lệnh" />
+        <div class="palette-results">
+          <div class="palette-item"># general</div>
+          <div class="palette-item"># thảo-luận</div>
+          <div class="palette-item">@ Admin</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Advanced Search Popup -->
+    <div class="search-popup" id="searchPopup">
+      <div class="search-header">Tìm kiếm nâng cao</div>
+      <div class="search-body">
+        <input type="text" placeholder="Từ khóa..." class="search-input-field" />
+        <div class="search-filters">
+          <label>From: <select><option>Mọi người</option></select></label>
+          <label>Has: 
+            <input type="checkbox" /> Image 
+            <input type="checkbox" /> File
+          </label>
+        </div>
+        <button class="search-btn">Tìm kiếm</button>
+      </div>
+    </div>
+
+    <!-- Notification Center Popup -->
+    <div class="notification-popup" id="notificationPopup">
+      <div class="search-header">Thông báo</div>
+      <div class="notification-list">
+        <div class="notification-item unread">
+          <div class="noti-icon">🔔</div>
+          <div class="noti-content">
+            <p><strong>Admin</strong> đã nhắc đến bạn trong <strong>#general</strong></p>
+            <span>Vừa xong</span>
+          </div>
+        </div>
+        <div class="notification-item">
+          <div class="noti-icon">🎉</div>
+          <div class="noti-content">
+            <p>Chào mừng bạn đến với server!</p>
+            <span>2 giờ trước</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Column 1: Server List -->
     <nav class="server-list">
       <button class="channel-drawer-toggle" id="channelToggle" title="Mở/đóng phòng chat" aria-label="Menu kênh">☰</button>
@@ -71,11 +155,12 @@
     <!-- Column 3: Chat Area -->
     <main class="chat-area">
       <header class="chat-header">
-        <div class="chat-title"><span>#</span> general</div>
+        <div class="chat-title" id="chatTitleBtn" style="cursor:pointer;"><span>#</span> general</div>
         <div class="chat-tools">
-          <div title="Thông báo">🔔</div>
+          <div title="Giao diện" id="themeSwitcherBtn" style="cursor:pointer;">🌙</div>
+          <div title="Thông báo" id="notificationBtn" style="cursor:pointer;">🔔</div>
           <div title="Ghim">📌</div>
-          <div title="Thành viên">👥</div>
+          <div title="Thành viên" id="toggleMembersBtn" style="cursor:pointer;">👥</div>
           <div class="search-bar">Tìm kiếm <span>🔍</span></div>
           <div title="Hộp thư">📥</div>
           <div title="Trợ giúp">❓</div>
@@ -121,13 +206,46 @@
       </div>
     </main>
 
-    <!-- Column 4: Member List (Desktop) -->
-    <aside class="member-list" id="memberList">
-      <div class="member-group">Trực tuyến — <span id="onlineCount">0</span></div>
-      <div id="onlineMembersList"></div>
+    <!-- Column 4: Right Sidebar (Members, Channel Info, Threads) -->
+    <aside class="right-sidebar" id="rightSidebar">
+      <!-- Member List Panel -->
+      <div class="sidebar-panel active" id="memberListPanel">
+        <div class="member-group">Trực tuyến — <span id="onlineCount">0</span></div>
+        <div id="onlineMembersList"></div>
 
-      <div class="member-group" style="margin-top:16px;">Ngoại tuyến — <span id="offlineCount">0</span></div>
-      <div id="offlineMembersList"></div>
+        <div class="member-group" style="margin-top:16px;">Ngoại tuyến — <span id="offlineCount">0</span></div>
+        <div id="offlineMembersList"></div>
+      </div>
+
+      <!-- Channel Info Panel -->
+      <div class="sidebar-panel" id="channelInfoPanel">
+        <div class="sidebar-header">
+          <h3># general</h3>
+          <button class="close-sidebar-btn">✕</button>
+        </div>
+        <div class="sidebar-content">
+          <div class="channel-desc">Thảo luận chung</div>
+          <div class="info-item">📌 Pinned (12)</div>
+          <div class="info-item">🖼 Media (58)</div>
+          <div class="info-item">📎 Files (18)</div>
+          <div class="info-item">🔗 Links (45)</div>
+          <div class="info-item">👥 Members (<span class="info-member-count">0</span>)</div>
+        </div>
+      </div>
+
+      <!-- Thread Panel -->
+      <div class="sidebar-panel" id="threadPanel">
+        <div class="sidebar-header">
+          <h3>Thread</h3>
+          <button class="close-sidebar-btn">✕</button>
+        </div>
+        <div class="sidebar-content thread-content">
+          <!-- Thread messages will go here -->
+        </div>
+        <div class="thread-input-box">
+          <input type="text" placeholder="Nhập trả lời..." class="thread-input" />
+        </div>
+      </div>
     </aside>
 
     <!-- Member List (Mobile drawer) -->

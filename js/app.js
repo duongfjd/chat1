@@ -12,6 +12,7 @@ import {
 import { supabase } from "./supabase-client.js";
 import { createMessageManager } from "./messages.js";
 import { showError, showSuccess, showNetworkError, showWarning } from "./toast.js";
+import { setupContextMenu } from "./context-menu.js";
 import {
   createEmojiPicker,
   initMobileDrawer,
@@ -24,7 +25,10 @@ import {
   setupAutoResizeTextarea,
   setupCharacterCounter,
   showFilePreview,
-  hideFilePreview
+  hideFilePreview,
+  initRightSidebar,
+  initProfileCard,
+  initPopups
 } from "./ui.js";
 
 const statusEl = document.getElementById("status");
@@ -79,15 +83,23 @@ const updatePresenceInfo = () => {
   if (onlineCountEl) onlineCountEl.textContent = count;
   if (!onlineMembersListEl) return;
 
-  const memberHtml = Object.values(presenceUsers).map((user) => `
+  const memberHtml = Object.values(presenceUsers).map((user) => {
+    let badgeHtml = "";
+    const nameStr = user.username || "";
+    if (nameStr.toLowerCase() === "admin") badgeHtml = `<span class="badge badge-admin">ADMIN</span>`;
+    
+    return `
     <div class="member">
       <div class="member-avatar">
         <div class="avatar" style="background-color:${getAvatarColor(user.username)}"></div>
         <div class="status-dot"></div>
       </div>
-      <div class="member-name">${escapeHtml(user.username)}</div>
+      <div class="member-name-wrapper">
+        <div class="member-name">${escapeHtml(user.username)}</div>
+        ${badgeHtml}
+      </div>
     </div>
-  `).join("");
+  `}).join("");
 
   if (onlineMembersListEl) onlineMembersListEl.innerHTML = memberHtml;
   const mobileList = document.getElementById("onlineMembersListMobile");
@@ -215,8 +227,24 @@ const uploadAndSendFile = async (file) => {
     messageInputEl.disabled = true;
     setUploadStatus(`⏳ Đang tải lên ${file.name}...`);
 
+    const progressContainer = document.getElementById("fileProgressContainer");
+    const progressBar = document.getElementById("fileProgressBar");
+    const closeBtn = document.querySelector(".preview-close");
+    if (progressContainer && progressBar) {
+      progressContainer.style.display = "block";
+      progressBar.style.width = "20%";
+      if (closeBtn) closeBtn.style.display = "none";
+    }
+
     let retries = 3;
     let uploadSuccess = false;
+
+    // Simulate progress
+    const progressInterval = setInterval(() => {
+      if (progressBar && parseInt(progressBar.style.width) < 85) {
+        progressBar.style.width = (parseInt(progressBar.style.width) + 15) + "%";
+      }
+    }, 500);
 
     while (retries > 0) {
       try {
@@ -228,6 +256,7 @@ const uploadAndSendFile = async (file) => {
 
         if (!result.error) {
           uploadSuccess = true;
+          if (progressBar) progressBar.style.width = "100%";
           console.log("✅ Upload successful");
           break;
         }
@@ -250,6 +279,7 @@ const uploadAndSendFile = async (file) => {
       }
     }
 
+    clearInterval(progressInterval);
     attachBtnEl.disabled = false;
     messageInputEl.disabled = false;
 
@@ -275,7 +305,10 @@ const uploadAndSendFile = async (file) => {
       url: publicData.publicUrl
     });
 
-    const payload = messageManager.buildMessagePayload(marker, replyBar.getReply());
+    const content = messageInputEl.value.trim();
+    const finalContent = content ? `${content}\n${marker}` : marker;
+
+    const payload = messageManager.buildMessagePayload(finalContent, replyBar.getReply());
     const insertError = await messageManager.tryInsertMessage(payload);
 
     if (insertError) {
@@ -312,6 +345,46 @@ fileInputEl.addEventListener("change", () => {
   const file = fileInputEl.files?.[0];
   if (file) {
     showFilePreview(file);
+  }
+});
+
+// Drag and drop upload logic
+let dragCounter = 0;
+const dropOverlay = document.getElementById("dropOverlay");
+
+window.addEventListener("dragover", (e) => {
+  e.preventDefault();
+});
+
+window.addEventListener("dragenter", (e) => {
+  e.preventDefault();
+  if (e.dataTransfer.types.includes("Files")) {
+    dragCounter++;
+    dropOverlay.classList.add("active");
+  }
+});
+
+window.addEventListener("dragleave", (e) => {
+  e.preventDefault();
+  dragCounter--;
+  if (dragCounter <= 0) {
+    dragCounter = 0;
+    dropOverlay.classList.remove("active");
+  }
+});
+
+window.addEventListener("drop", (e) => {
+  e.preventDefault();
+  dragCounter = 0;
+  dropOverlay.classList.remove("active");
+
+  const files = e.dataTransfer.files;
+  if (files.length > 0) {
+    const file = files[0];
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    fileInputEl.files = dataTransfer.files;
+    fileInputEl.dispatchEvent(new Event("change"));
   }
 });
 
@@ -429,6 +502,9 @@ const drawer = initMobileDrawer({
 initMobileMenu();
 initServerIcons();
 initChannels({ onSwitchRoom: switchRoom, onDrawerClose: () => drawer.close() });
+initRightSidebar();
+initProfileCard();
+initPopups();
 renderOfflineMembers(document.getElementById("offlineMembersList"), OFFLINE_MEMBERS);
 renderOfflineMembers(document.getElementById("offlineMembersListMobile"), OFFLINE_MEMBERS);
 
@@ -441,3 +517,69 @@ messageManager.loadInitialMessages().then(() => {
 
 document.getElementById("offlineCount").textContent = OFFLINE_MEMBERS.length;
 document.getElementById("offlineCountMobile").textContent = OFFLINE_MEMBERS.length;
+
+// Setup context menu actions
+setupContextMenu((action, messageId, msgEl) => {
+  const msgCache = messageManager.getMessageCache()[messageId];
+  const isOwn = msgCache && msgCache.username === (usernameEl.value.trim() || "guest");
+
+  switch (action) {
+    case "reaction":
+      msgEl.querySelector(".msg-action-btn:nth-child(2)")?.click();
+      break;
+    case "reply":
+      msgEl.querySelector(".msg-action-btn:nth-child(1)")?.click();
+      break;
+    case "copy":
+      if (msgCache?.content) {
+        navigator.clipboard.writeText(msgCache.content.replace(/\[\[.*?\]\]/g, "").trim());
+        showSuccess("Đã copy tin nhắn");
+      }
+      break;
+    case "pin":
+      showSuccess("Đã ghim tin nhắn (Demo)");
+      break;
+    case "edit":
+      if (isOwn) msgEl.querySelector(".msg-action-btn:nth-child(3)")?.click();
+      else showError("Bạn không thể sửa tin nhắn này");
+      break;
+    case "delete":
+      if (isOwn) msgEl.querySelector(".delete")?.click();
+      else showError("Bạn không thể xóa tin nhắn này");
+      break;
+    case "copylink":
+      showSuccess("Đã copy link tin nhắn (Demo)");
+      break;
+  }
+});
+
+// Thread Sidebar logic
+window.openThread = (messageId, sender, content) => {
+  const threadPanel = document.getElementById("threadPanel");
+  const memberListPanel = document.getElementById("memberListPanel");
+  const channelInfoPanel = document.getElementById("channelInfoPanel");
+  const rightSidebar = document.getElementById("rightSidebar");
+  
+  if (memberListPanel) memberListPanel.classList.remove("active");
+  if (channelInfoPanel) channelInfoPanel.classList.remove("active");
+  
+  if (threadPanel && rightSidebar) {
+    rightSidebar.style.display = "flex";
+    threadPanel.classList.add("active");
+    
+    const threadContent = threadPanel.querySelector(".thread-content");
+    if (threadContent) {
+      threadContent.innerHTML = `
+        <div class="message" style="background:var(--input-bg); padding:12px; border-radius:8px; margin-bottom:16px;">
+          <div class="msg-header">
+            <span class="msg-author">${escapeHtml(sender)}</span>
+          </div>
+          <div class="msg-content">${escapeHtml(content)}</div>
+        </div>
+        <div style="text-align:center; color:var(--text-muted); font-size:12px; margin:20px 0;">
+          Đây là bắt đầu của Thread.
+        </div>
+      `;
+    }
+  }
+};

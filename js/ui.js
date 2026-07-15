@@ -4,22 +4,46 @@ import { escapeHtml } from "./utils.js";
 export function createEmojiPicker({ onSelect, anchorEl }) {
   const picker = document.createElement("div");
   picker.className = "emoji-picker";
-  picker.innerHTML = `<div class="emoji-picker-grid"></div>`;
+  
+  picker.innerHTML = `
+    <div class="emoji-search-box">
+      <input type="text" class="emoji-search-input" placeholder="Search emoji..." />
+    </div>
+    <div class="emoji-categories">
+      <span title="Recent">🕒</span>
+      <span title="Smileys">😀</span>
+      <span title="Animals">🐻</span>
+      <span title="Food">🍔</span>
+      <span title="Flags">🚩</span>
+    </div>
+    <div class="emoji-picker-grid"></div>
+  `;
+  
   const grid = picker.querySelector(".emoji-picker-grid");
+  const searchInput = picker.querySelector(".emoji-search-input");
 
-  EMOJI_LIST.forEach((emoji) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "emoji-picker-item";
-    btn.textContent = emoji;
-    btn.title = emoji;
-    btn.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      onSelect(emoji);
-      picker.classList.remove("active");
-    };
-    grid.appendChild(btn);
+  const renderEmojis = (filterText = "") => {
+    grid.innerHTML = "";
+    EMOJI_LIST.filter(e => e.includes(filterText) || filterText === "").forEach((emoji) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "emoji-picker-item";
+      btn.textContent = emoji;
+      btn.title = emoji;
+      btn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onSelect(emoji);
+        picker.classList.remove("active");
+      };
+      grid.appendChild(btn);
+    });
+  };
+
+  renderEmojis();
+
+  searchInput.addEventListener("input", (e) => {
+    renderEmojis(e.target.value.toLowerCase()); // simple mock filter since we just have array of emoji chars
   });
 
   anchorEl.style.position = "relative";
@@ -157,15 +181,26 @@ export function updateUnreadBadges({ currentRoom, unreadCounts }) {
 
 export function renderOfflineMembers(container, members) {
   if (!container) return;
-  container.innerHTML = members.map((m) => `
-    <div class="member offline">
-      <div class="member-avatar">
-        <div class="avatar" style="background-color:${m.color}"></div>
-        <div class="status-dot offline"></div>
+  container.innerHTML = members.map((m) => {
+    let badgeHtml = "";
+    if (m.role === "admin") badgeHtml = `<span class="badge badge-admin">ADMIN</span>`;
+    else if (m.role === "mod") badgeHtml = `<span class="badge badge-mod">MOD</span>`;
+    else if (m.role === "bot") badgeHtml = `<span class="badge badge-bot">BOT</span>`;
+    else if (m.name.toLowerCase() === "admin") badgeHtml = `<span class="badge badge-admin">ADMIN</span>`;
+
+    return `
+      <div class="member offline">
+        <div class="member-avatar">
+          <div class="avatar" style="background-color:${m.color}"></div>
+          <div class="status-dot offline"></div>
+        </div>
+        <div class="member-name-wrapper">
+          <div class="member-name">${escapeHtml(m.name)}</div>
+          ${badgeHtml}
+        </div>
       </div>
-      <div class="member-name">${escapeHtml(m.name)}</div>
-    </div>
-  `).join("");
+    `;
+  }).join("");
 }
 
 export function scrollToMessage(messageId) {
@@ -238,7 +273,9 @@ export function setupCharacterCounter(inputEl, maxLength) {
     // Disable send button if over limit
     const sendBtn = document.querySelector(".send-btn");
     if (sendBtn) {
-      sendBtn.disabled = length > maxLength || length === 0;
+      const fileInput = document.getElementById("fileInput");
+      const hasFile = fileInput && fileInput.files && fileInput.files.length > 0;
+      sendBtn.disabled = length > maxLength || (length === 0 && !hasFile);
     }
   };
 
@@ -267,6 +304,11 @@ export function showFilePreview(file) {
       <div class="preview-info">
         <div class="preview-name">${escapeHtml(file.name)}</div>
         <div class="preview-size">${(file.size / 1024).toFixed(2)} KB</div>
+        <div class="preview-progress" id="fileProgressContainer" style="display:none; margin-top:6px;">
+          <div class="progress-bar-bg" style="height:6px; background:var(--bg-server); border-radius:3px; overflow:hidden;">
+            <div id="fileProgressBar" style="height:100%; width:0%; background:var(--accent); transition:width 0.2s;"></div>
+          </div>
+        </div>
       </div>
       <button type="button" class="preview-close" aria-label="Xóa file">✕</button>
     </div>
@@ -277,12 +319,187 @@ export function showFilePreview(file) {
     preview.remove();
     const fileInput = document.getElementById("fileInput");
     if (fileInput) fileInput.value = "";
+    document.getElementById("messageInput")?.dispatchEvent(new Event("input"));
   });
+
+  // Trigger input event to update send button state
+  document.getElementById("messageInput")?.dispatchEvent(new Event("input"));
 
   return preview;
 }
 
 export function hideFilePreview() {
   const preview = document.getElementById("filePreview");
-  if (preview) preview.remove();
+  if (preview) {
+    preview.remove();
+    document.getElementById("messageInput")?.dispatchEvent(new Event("input"));
+  }
+}
+
+export function initRightSidebar() {
+  const memberListPanel = document.getElementById("memberListPanel");
+  const channelInfoPanel = document.getElementById("channelInfoPanel");
+  const threadPanel = document.getElementById("threadPanel");
+  
+  const panels = [memberListPanel, channelInfoPanel, threadPanel];
+
+  const showPanel = (panelToShow) => {
+    panels.forEach(p => p && p.classList.remove("active"));
+    if (panelToShow) panelToShow.classList.add("active");
+  };
+
+  document.getElementById("toggleMembersBtn")?.addEventListener("click", () => {
+    if (memberListPanel?.classList.contains("active")) {
+      showPanel(null); // hide all
+      document.getElementById("rightSidebar").style.display = "none";
+    } else {
+      document.getElementById("rightSidebar").style.display = "flex";
+      showPanel(memberListPanel);
+    }
+  });
+
+  document.getElementById("chatTitleBtn")?.addEventListener("click", () => {
+    if (channelInfoPanel?.classList.contains("active")) {
+      showPanel(null);
+      document.getElementById("rightSidebar").style.display = "none";
+    } else {
+      document.getElementById("rightSidebar").style.display = "flex";
+      showPanel(channelInfoPanel);
+    }
+  });
+
+  document.querySelectorAll(".close-sidebar-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      showPanel(null);
+      document.getElementById("rightSidebar").style.display = "none";
+    });
+  });
+}
+
+export function initProfileCard() {
+  const profileCard = document.getElementById("profileCard");
+  const profileAvatar = document.getElementById("profileAvatar");
+  const profileStatus = document.getElementById("profileStatus");
+  const profileName = document.getElementById("profileName");
+  const profileRoleBadge = document.getElementById("profileRoleBadge");
+
+  if (!profileCard) return;
+
+  document.addEventListener("click", (e) => {
+    // Check if clicked on a member avatar
+    const memberEl = e.target.closest(".member") || e.target.closest(".msg-header")?.querySelector(".msg-author");
+    const avatarEl = e.target.closest(".msg-avatar");
+
+    let username = null;
+    let color = null;
+    let isOffline = false;
+    let role = "Member";
+
+    if (memberEl && memberEl.classList.contains("member")) {
+      username = memberEl.querySelector(".member-name")?.textContent;
+      color = memberEl.querySelector(".avatar")?.style.backgroundColor;
+      isOffline = memberEl.classList.contains("offline");
+      role = memberEl.querySelector(".badge")?.textContent || "Member";
+    } else if (memberEl && memberEl.classList.contains("msg-author")) {
+      username = memberEl.textContent;
+      role = username.toLowerCase() === "admin" ? "ADMIN" : "Member";
+    } else if (avatarEl) {
+      const authorEl = avatarEl.parentElement.querySelector(".msg-author");
+      username = authorEl?.textContent;
+      color = avatarEl.style.backgroundColor;
+      role = (username && username.toLowerCase() === "admin") ? "ADMIN" : "Member";
+    }
+
+    if (username) {
+      e.stopPropagation();
+      profileName.textContent = username;
+      profileRoleBadge.textContent = role;
+      if (color) profileAvatar.style.backgroundColor = color;
+      
+      profileStatus.className = "status-dot " + (isOffline ? "offline" : "");
+
+      profileCard.classList.add("active");
+      
+      // Position logic
+      const rect = e.target.getBoundingClientRect();
+      let top = rect.top;
+      let left = rect.right + 10;
+      
+      if (left + 300 > window.innerWidth) left = rect.left - 310;
+      if (top + 400 > window.innerHeight) top = window.innerHeight - 410;
+      
+      profileCard.style.top = `${top}px`;
+      profileCard.style.left = `${left}px`;
+    } else if (!profileCard.contains(e.target)) {
+      profileCard.classList.remove("active");
+    }
+  });
+}
+
+export function initPopups() {
+  const searchPopup = document.getElementById("searchPopup");
+  const searchBtn = document.querySelector(".chat-tools .search-bar");
+  
+  const notificationPopup = document.getElementById("notificationPopup");
+  const notificationBtn = document.getElementById("notificationBtn");
+
+  searchBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    searchPopup?.classList.toggle("active");
+    notificationPopup?.classList.remove("active");
+  });
+
+  notificationBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    notificationPopup?.classList.toggle("active");
+    searchPopup?.classList.remove("active");
+  });
+
+  document.addEventListener("click", (e) => {
+    if (searchPopup && !searchPopup.contains(e.target) && !searchBtn.contains(e.target)) {
+      searchPopup.classList.remove("active");
+    }
+    if (notificationPopup && !notificationPopup.contains(e.target) && !notificationBtn.contains(e.target)) {
+      notificationPopup.classList.remove("active");
+    }
+  });
+
+  const commandPalette = document.getElementById("commandPalette");
+  const paletteInput = document.querySelector(".palette-input");
+
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      if (commandPalette) {
+        commandPalette.classList.add("active");
+        paletteInput?.focus();
+      }
+    }
+    if (e.key === "Escape" && commandPalette) {
+      commandPalette.classList.remove("active");
+    }
+  });
+
+  commandPalette?.addEventListener("click", (e) => {
+    if (e.target === commandPalette) {
+      commandPalette.classList.remove("active");
+    }
+  });
+
+  document.querySelectorAll(".palette-item").forEach(item => {
+    item.addEventListener("click", () => {
+      commandPalette?.classList.remove("active");
+      const title = document.querySelector(".chat-title");
+      if (title && item.textContent.startsWith("#")) {
+        title.innerHTML = `<span>#</span> ${item.textContent.replace("#", "").trim()}`;
+      }
+    });
+  });
+
+  // Theme Switcher Logic
+  const themeSwitcherBtn = document.getElementById("themeSwitcherBtn");
+  themeSwitcherBtn?.addEventListener("click", () => {
+    const isLight = document.body.classList.toggle("theme-light");
+    themeSwitcherBtn.textContent = isLight ? "☀️" : "🌙";
+  });
 }

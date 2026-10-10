@@ -1,0 +1,180 @@
+/* ==========================================================================
+   QUICKCHAT - THEMES.CSS
+   Giao diện Sáng / Tối, Bảng màu nhấn, Hình nền Chat, Cỡ chữ & Mật độ
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   DARK THEME (Xám xanh đậm dịu mắt, tương phản cao, chuẩn WCAG AA)
+   -------------------------------------------------------------------------- */
+[data-theme="dark"] {
+  --bg-app: #0f172a;       /* Slate 900 */
+  --bg-rail: #0b1120;      /* Slate 950 */
+  --bg-sidebar: #131d35;   /* Slate 900+ */
+  --bg-main: #0b1329;      /* Slate 950 tinted */
+  --bg-panel: #131d35;     /* Slate 900 */
+  --bg-card: #1e293b;      /* Slate 800 */
+  --bg-hover: #1e293b;
+  --bg-active: #28354b;
+  --bg-input: #1a243b;
+
+  --border-color: #243048;
+  --border-subtle: #1c273d;
+
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+
+  --bubble-other: #1e293b;
+  --bubble-other-text: #f1f5f9;
+  --bubble-other-time: #94a3b8;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+/* OLED Pure Black (cho màn hình OLED siêu tiết kiệm pin) */
+[data-theme="oled"] {
+  --bg-app: #000000;
+  --bg-rail: #000000;
+  --bg-sidebar: #050505;
+  --bg-main: #000000;
+  --bg-panel: #080808;
+  --bg-card: #121212;
+  --bg-hover: #1c1c1e;
+  --bg-active: #2c2c2e;
+  --bg-input: #151515;
+
+  --border-color: #202022;
+  --border-subtle: #161618;
+
+  --text-main: #ffffff;
+  --text-muted: #a1a1aa;
+  --text-dim: #71717a;
+
+  --bubble-other: #18181b;
+  --bubble-other-text: #ffffff;
+  --bubble-other-time: #a1a1aa;
+}
+
+/* --------------------------------------------------------------------------
+   BẢNG MÀU NHẤN (ACCENT COLORS)
+   -------------------------------------------------------------------------- */
+[data-accent="emerald"] {
+  --color-primary: #10b981;
+  --color-primary-hover: #059669;
+  --color-primary-light: rgba(16, 185, 129, 0.12);
+  --bubble-me: #10b981;
+}
+
+[data-accent="orange"] {
+  --color-primary: #f97316;
+  --color-primary-hover: #ea580c;
+  --color-primary-light: rgba(249, 115, 22, 0.12);
+  --bubble-me: #f97316;
+}
+
+[data-accent="rose"] {
+  --color-primary: #f43f5e;
+  --color-primary-hover: #e11d48;
+  --color-primary-light: rgba(244, 63, 94, 0.12);
+  --bubble-me: #f43f5e;
+}
+
+[data-accent="cyan"] {
+  --color-primary: #06b6d4;
+  --color-primary-hover: #0891b2;
+  --color-primary-light: rgba(6, 182, 212, 0.12);
+  --bubble-me: #0891b2;
+}
+
+[data-accent="violet"] {
+  --color-primary: #8b5cf6;
+  --color-primary-hover: #7c3aed;
+  --color-primary-light: rgba(139, 92, 246, 0.12);
+  --bubble-me: #8b5cf6;
+}
+
+[data-accent="amber"] {
+  --color-primary: #f59e0b;
+  --color-primary-hover: #d97706;
+  --color-primary-light: rgba(245, 158, 11, 0.12);
+  --bubble-me: #d97706;
+}
+
+[data-accent="crimson"] {
+  --color-primary: #dc2626;
+  --color-primary-hover: #b91c1c;
+  --color-primary-light: rgba(220, 38, 38, 0.12);
+  --bubble-me: #dc2626;
+}
+
+[data-accent="classic-blue"] {
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-light: rgba(37, 99, 235, 0.12);
+  --bubble-me: #2563eb;
+}
+
+/* --------------------------------------------------------------------------
+   CỠ CHỮ TOÀN ỨNG DỤNG
+   -------------------------------------------------------------------------- */
+[data-font-size="small"] {
+  --font-size-root: 13.5px;
+}
+[data-font-size="medium"] {
+  --font-size-root: 15px;
+}
+[data-font-size="large"] {
+  --font-size-root: 16.5px;
+}
+
+/* --------------------------------------------------------------------------
+   MẬT ĐỘ TIN NHẮN (DENSITY)
+   -------------------------------------------------------------------------- */
+[data-density="compact"] .message-row {
+  margin-bottom: 2px !important;
+}
+[data-density="compact"] .message-bubble {
+  padding: 6px 10px !important;
+}
+[data-density="comfortable"] .message-row {
+  margin-bottom: 8px !important;
+}
+
+/* --------------------------------------------------------------------------
+   BO GÓC TIN NHẮN (BUBBLE RADIUS)
+   -------------------------------------------------------------------------- */
+[data-bubble-radius="sharp"] {
+  --radius-bubble: 8px;
+}
+[data-bubble-radius="normal"] {
+  --radius-bubble: 18px;
+}
+[data-bubble-radius="round"] {
+  --radius-bubble: 26px;
+}
+
+/* --------------------------------------------------------------------------
+   HÌNH NỀN KHUNG CHAT (CHAT WALLPAPERS)
+   -------------------------------------------------------------------------- */
+.chat-messages-container[data-wallpaper="default"] {
+  background-color: var(--bg-main);
+}
+
+.chat-messages-container[data-wallpaper="dots"] {
+  background-color: var(--bg-main);
+  background-image: radial-gradient(var(--border-color) 1.2px, transparent 1.2px);
+  background-size: 20px 20px;
+}
+
+.chat-messages-container[data-wallpaper="gradient"] {
+  background: linear-gradient(135deg, rgba(91, 108, 255, 0.08) 0%, rgba(16, 185, 129, 0.06) 100%), var(--bg-main);
+}
+
+.chat-messages-container[data-wallpaper="doodle"] {
+  background-color: var(--bg-main);
+  background-image: radial-gradient(circle at 10% 20%, rgba(91, 108, 255, 0.04) 0%, transparent 20%),
+                    radial-gradient(circle at 90% 80%, rgba(244, 63, 94, 0.04) 0%, transparent 25%);
+}

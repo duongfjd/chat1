@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="vi" data-theme="light" data-font-size="medium" data-density="comfortable">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>QuickChat - Web App Nhắn Tin & Lưu Trữ Đa Năng</title>
+    <meta name="description" content="Ứng dụng nhắn tin và lưu trữ đa năng với nhóm, chủ đề, chia sẻ file, kho link, đồng bộ tab BroadcastChannel và hỗ trợ offline PWA hoàn toàn bằng Vanilla JS." />
+    
+    <!-- OpenGraph & Twitter Cards -->
+    <meta property="og:title" content="QuickChat - Web App Nhắn Tin & Lưu Trữ Đa Năng" />
+    <meta property="og:description" content="Ứng dụng nhắn tin và lưu trữ đa năng với nhóm, chủ đề, chia sẻ file, kho link, đồng bộ tab BroadcastChannel và hỗ trợ offline PWA hoàn toàn bằng Vanilla JS." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#5b6cff" />
+    
+    <!-- PWA & Mobile Meta -->
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="assets/icon-192.svg" />
+    <link rel="apple-touch-icon" href="assets/icon-192.svg" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="QuickChat" />
+
+    <!-- CSS toàn bộ ứng dụng -->
+    <link rel="stylesheet" href="/src/index.css" />
+
+    <!-- Cầu nối Firebase Firestore & Authentication -->
+    <script type="module" src="/src/firebase-bridge.ts"></script>
+
+    <!-- Tải trước các module JavaScript theo thứ tự phân lớp chuẩn -->
+    <script defer src="js/utils.js"></script>
+    <script defer src="js/storage.js"></script>
+    <script defer src="js/transport.js"></script>
+    <script defer src="js/ui.js"></script>
+    <script defer src="js/groups.js"></script>
+    <script defer src="js/files.js"></script>
+    <script defer src="js/links.js"></script>
+    <script defer src="js/search.js"></script>
+    <script defer src="js/settings.js"></script>
+    <script defer src="js/chat.js"></script>
+    <script defer src="js/app.js"></script>
+  </head>
+  <body>
+    <!-- Thông báo trạng thái mất mạng Offline -->
+    <div id="offline-banner" role="alert">
+      <span>📡</span>
+      <span>Đang ngoại tuyến — Dữ liệu tin nhắn và tệp được lưu an toàn trong máy bạn.</span>
+    </div>
+
+    <!-- Khung chính ứng dụng -->
+    <div id="app">
+      <!-- ==================================================================
+           1. THANH ĐIỀU HƯỚNG DỌC (RAIL - Dành cho màn hình máy tính ≥ 1024px)
+           ================================================================== -->
+      <nav class="app-rail" aria-label="Thanh điều hướng chính">
+        <div class="rail-brand">
+          <button class="rail-logo-btn" title="QuickChat">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="rail-nav">
+          <button class="rail-item active" data-tab="chats" title="Trò chuyện" aria-label="Trò chuyện">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+            </svg>
+          </button>
+
+          <button class="rail-item" data-tab="groups" title="Nhóm & Kênh" aria-label="Nhóm và kênh">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </button>
+
+          <button class="rail-item" data-tab="files" title="Thư viện tệp" aria-label="Thư viện tệp">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+              <polyline points="13 2 13 9 20 9"></polyline>
+            </svg>
+          </button>
+
+          <button class="rail-item" data-tab="links" title="Kho liên kết" aria-label="Kho liên kết">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+
+          <button class="rail-item" data-tab="saved" title="Đã ghim & Đã lưu" aria-label="Đã ghim và đã lưu">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+          </button>
+
+          <button class="rail-item" data-tab="settings" title="Cài đặt" aria-label="Cài đặt">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="rail-footer">
+          <!-- Nút cài đặt ứng dụng PWA -->
+          <button id="btn-pwa-install" class="rail-item" style="display: none; color: var(--color-primary);" title="Cài đặt QuickChat" aria-label="Cài đặt QuickChat">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </button>
+        </div>
+      </nav>
+
+      <!-- ==================================================================
+           2. DANH SÁCH HỘI THOẠI (SIDEBAR)
+           ================================================================== -->
+      <aside class="app-sidebar" id="view-sidebar" aria-label="Danh sách cuộc hội thoại">
+        <div class="sidebar-header">
+          <div class="sidebar-top-bar">
+            <h1 class="sidebar-title">Tin nhắn</h1>
+            <button class="composer-action-btn" id="btn-new-chat" title="Tạo cuộc hội thoại hoặc nhóm mới" aria-label="Tạo mới">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="sidebar-search-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="sidebar-search-input" class="sidebar-search-input" placeholder="Tìm kiếm... (Ctrl+K)" aria-label="Tìm kiếm cuộc trò chuyện" />
+          </div>
+        </div>
+
+        <!-- Bộ lọc danh sách -->
+        <div class="sidebar-filters-scroll" role="tablist">
+          <button class="filter-pill active" data-filter="all" role="tab" aria-selected="true">Tất cả</button>
+          <button class="filter-pill" data-filter="unread" role="tab" aria-selected="false">Chưa đọc</button>
+          <button class="filter-pill" data-filter="groups" role="tab" aria-selected="false">Nhóm</button>
+          <button class="filter-pill" data-filter="direct" role="tab" aria-selected="false">Cá nhân</button>
+        </div>
+
+        <!-- Vùng danh sách chat cuộn -->
+        <div class="sidebar-list-container" id="sidebar-chat-list">
+          <!-- Được render tự động qua app.js -->
+        </div>
+
+        <!-- Bottom Navigation dành riêng cho Mobile (< 640px) -->
+        <nav class="mobile-bottom-nav" aria-label="Điều hướng trên điện thoại">
+          <button class="mobile-nav-item active" data-tab="chats">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+            </svg>
+            <span>Chat</span>
+          </button>
+          <button class="mobile-nav-item" data-tab="groups">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+            </svg>
+            <span>Nhóm</span>
+          </button>
+          <button class="mobile-nav-item" data-tab="files">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+            </svg>
+            <span>File</span>
+          </button>
+          <button class="mobile-nav-item" data-tab="links">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+            </svg>
+            <span>Link</span>
+          </button>
+          <button class="mobile-nav-item" data-tab="settings">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <span>Cài đặt</span>
+          </button>
+        </nav>
+
+        <!-- Nút nổi Mobile FAB -->
+        <button class="mobile-fab" id="mobile-fab-btn" aria-label="Tạo mới">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+      </aside>
+
+      <!-- ==================================================================
+           3. KHUNG CHAT CHÍNH (MAIN CHAT AREA)
+           ================================================================== -->
+      <main class="app-main" id="app-main-content">
+        <section id="view-chat" style="width: 100%; height: 100%; display: flex; flex-direction: column;">
+          <!-- Header cuộc trò chuyện -->
+          <header class="chat-header">
+            <!-- Nút Back cho giao diện Mobile -->
+            <button class="composer-action-btn" id="btn-mobile-back" style="display: none; margin-right: 8px;" aria-label="Quay lại danh sách">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
+            </button>
+
+            <div id="chat-header-content" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+              <!-- Render động qua chat.js -->
+            </div>
+          </header>
+
+          <!-- Vùng chứa luồng tin nhắn cuộn -->
+          <div id="chat-messages-container-wrapper" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative;">
+            <div class="chat-messages-container" id="chat-messages-scroll" data-wallpaper="default" role="log" aria-live="polite">
+              <!-- Render động danh sách tin nhắn -->
+            </div>
+
+            <!-- Nút cuộn xuống tin nhắn mới -->
+            <button id="btn-scroll-bottom" class="scroll-to-bottom-btn" aria-label="Cuộn xuống dưới cùng">
+              <span>↓</span>
+              <span id="scroll-bottom-badge">Tin mới</span>
+            </button>
+          </div>
+
+          <!-- Khung soạn thảo tin nhắn (Composer) -->
+          <footer class="chat-composer-wrapper">
+            <!-- Thanh hiển thị trích dẫn (Reply) hoặc chỉnh sửa (Edit) -->
+            <div id="composer-reply-bar" class="composer-reply-bar" style="display: none;"></div>
+
+            <!-- Form soạn tin -->
+            <div class="composer-form">
+              <!-- Nút đính kèm tệp 📎 -->
+              <button class="composer-action-btn" id="btn-attach-file" title="Gửi hình ảnh hoặc tài liệu" aria-label="Đính kèm tệp">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                </svg>
+              </button>
+              <input type="file" id="file-upload-input" multiple style="display: none;" />
+
+              <!-- Nút chọn emoji 😊 -->
+              <button class="composer-action-btn" id="btn-emoji-picker" title="Thêm biểu tượng cảm xúc" aria-label="Chọn Emoji">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                  <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                  <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                </svg>
+              </button>
+
+              <!-- Ô nhập tin nhắn tự co giãn -->
+              <textarea id="composer-input" class="composer-textarea" rows="1" placeholder="Nhập tin nhắn... (Enter gửi, Shift+Enter xuống dòng, / lệnh)" aria-label="Nội dung tin nhắn"></textarea>
+
+              <!-- Nút tạo bình chọn 📊 -->
+              <button class="composer-action-btn" id="btn-create-poll" title="Tạo bình chọn câu hỏi" aria-label="Tạo bình chọn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="20" x2="18" y2="10"></line>
+                  <line x1="12" y1="20" x2="12" y2="4"></line>
+                  <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+              </button>
+
+              <!-- Nút ghi âm giọng nói 🎙️ -->
+              <button class="composer-action-btn" id="btn-voice-record" title="Ghi âm tin nhắn thoại" aria-label="Ghi âm">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+              </button>
+
+              <!-- Nút gửi tin nhắn -->
+              <button class="composer-send-btn" id="btn-send-message" title="Gửi tin nhắn" aria-label="Gửi tin nhắn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            </div>
+          </footer>
+        </section>
+
+        <!-- ==================================================================
+             4. PANEL THÔNG TIN BÊN PHẢI (RIGHT INFO PANEL)
+             ================================================================== -->
+        <aside class="app-panel hidden" id="chat-info-panel" aria-label="Thông tin nhóm và hội thoại">
+          <!-- Render động qua chat.js -->
+        </aside>
+      </main>
+    </div>
+
+    <!-- Container chứa Toast thông báo -->
+    <div id="toast-container" aria-live="assertive"></div>
+  </body>
+</html>

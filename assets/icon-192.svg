@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5b6cff" />
+      <stop offset="100%" stop-color="#9333ea" />
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="42" fill="url(#grad)" />
+  <!-- Chat bubble icon with lightning bolt -->
+  <path d="M52 50 C40 50, 32 60, 32 74 L32 118 C32 132, 40 142, 54 142 L66 142 L66 158 C66 161, 70 163, 73 160 L94 142 L138 142 C152 142, 160 132, 160 118 L160 74 C160 60, 152 50, 138 50 Z" fill="#ffffff" opacity="0.95" />
+  <!-- Lightning bolt inside -->
+  <path d="M102 70 L80 102 L98 102 L90 126 L116 94 L98 94 Z" fill="url(#grad)" />
+</svg>

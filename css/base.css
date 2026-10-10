@@ -1,0 +1,190 @@
+/* ==========================================================================
+   QUICKCHAT - BASE.CSS
+   Biến CSS, Reset, Typography, Thanh cuộn và Tiện ích cơ bản
+   ========================================================================== */
+
+:root {
+  /* Tông màu chính & Biến giao diện (Default: Xanh tím hiện đại) */
+  --color-primary: #5b6cff;
+  --color-primary-hover: #4858e6;
+  --color-primary-light: rgba(91, 108, 255, 0.12);
+  --color-primary-contrast: #ffffff;
+  
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #0ea5e9;
+
+  /* Bảng màu sáng (Light Theme) */
+  --bg-app: #f4f5f8;
+  --bg-rail: #ffffff;
+  --bg-sidebar: #ffffff;
+  --bg-main: #f8fafc;
+  --bg-panel: #ffffff;
+  --bg-card: #ffffff;
+  --bg-hover: #f1f5f9;
+  --bg-active: #e2e8f0;
+  --bg-input: #f1f5f9;
+  
+  --border-color: #e2e8f0;
+  --border-subtle: #edf2f7;
+
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --text-dim: #94a3b8;
+
+  /* Tin nhắn Bubble */
+  --bubble-me: #5b6cff;
+  --bubble-me-text: #ffffff;
+  --bubble-me-time: rgba(255, 255, 255, 0.75);
+  --bubble-other: #ffffff;
+  --bubble-other-text: #0f172a;
+  --bubble-other-time: #64748b;
+
+  /* Phông chữ & Kích thước */
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-size-root: 15px;
+  --font-size-xs: 0.75rem;   /* 11px */
+  --font-size-sm: 0.8125rem; /* 12.5px */
+  --font-size-base: 0.9375rem;/* 14px */
+  --font-size-md: 1rem;       /* 15px */
+  --font-size-lg: 1.125rem;  /* 17px */
+  --font-size-xl: 1.35rem;   /* 20px */
+  --font-size-2xl: 1.6rem;   /* 24px */
+
+  /* Bo góc */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-full: 9999px;
+  --radius-bubble: 18px;
+
+  /* Đổ bóng mềm mại */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.12);
+  --shadow-float: 0 12px 32px rgba(91, 108, 255, 0.28);
+
+  /* Chuyển động */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Z-index phân tầng */
+  --z-base: 1;
+  --z-header: 20;
+  --z-floating: 50;
+  --z-drawer: 100;
+  --z-modal: 1000;
+  --z-lightbox: 1500;
+  --z-toast: 2000;
+}
+
+/* ==========================================================================
+   Reset chuẩn & Tối ưu hoá phần tử
+   ========================================================================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-family);
+  font-size: var(--font-size-root);
+  color: var(--text-main);
+  background-color: var(--bg-app);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+}
+
+/* Hỗ trợ text selectable trong tin nhắn */
+.selectable, .message-bubble, .note-text, input, textarea {
+  user-select: text;
+}
+
+button, input, textarea, select {
+  font: inherit;
+  color: inherit;
+  outline: none;
+  border: none;
+  background: none;
+}
+
+button {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+img, svg, video {
+  display: block;
+  max-width: 100%;
+}
+
+/* ==========================================================================
+   Thanh cuộn tuỳ chỉnh (Custom Scrollbars)
+   ========================================================================== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.6);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Accessible focus ring */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Trợ năng chuyển động tối giản */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

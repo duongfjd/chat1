@@ -1,0 +1,25 @@
+{
+  "id": "/",
+  "name": "QuickChat - Web App Nhắn Tin & Lưu Trữ",
+  "short_name": "QuickChat",
+  "description": "Ứng dụng nhắn tin, nhóm, chia sẻ file, kho link và lưu trữ dữ liệu offline toàn diện.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#5b6cff",
+  "icons": [
+    {
+      "src": "assets/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

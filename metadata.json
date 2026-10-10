@@ -1,0 +1,6 @@
+{
+  "name": "QuickChat - Web App Nhắn Tin & Lưu Trữ Đa Năng",
+  "description": "Ứng dụng nhắn tin và lưu trữ đa năng với nhóm, chủ đề, chia sẻ file, kho link, đồng bộ tab BroadcastChannel và hỗ trợ offline PWA hoàn toàn bằng Vanilla JS.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

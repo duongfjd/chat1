@@ -1,0 +1,74 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile representation in QuickChat",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "avatar": { "type": "string", "maxLength": 2048 },
+        "color": { "type": "string", "maxLength": 30 },
+        "status": { "type": "string", "maxLength": 50 },
+        "statusText": { "type": "string", "maxLength": 200 },
+        "email": { "type": "string", "maxLength": 254 },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "name"]
+    },
+    "Chat": {
+      "title": "Chat",
+      "description": "Conversation room or group in QuickChat",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "enum": ["direct", "group", "self"] },
+        "name": { "type": "string", "maxLength": 100 },
+        "avatar": { "type": "string", "maxLength": 2048 },
+        "members": { "type": "array" },
+        "roles": { "type": "object" },
+        "topics": { "type": "array" },
+        "lastMessageId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "type", "name", "members"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Individual message sent in a conversation",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "chatId": { "type": "string", "maxLength": 128 },
+        "topicId": { "type": "string", "maxLength": 128 },
+        "senderId": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "maxLength": 50 },
+        "text": { "type": "string", "maxLength": 10000 },
+        "attachments": { "type": "array" },
+        "replyTo": { "type": "object" },
+        "reactions": { "type": "object" },
+        "poll": { "type": "object" },
+        "status": { "type": "string", "maxLength": 50 },
+        "pinned": { "type": "boolean" },
+        "starred": { "type": "boolean" },
+        "edited": { "type": "boolean" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "chatId", "senderId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Collection of user profiles"
+    },
+    "/chats/{chatId}": {
+      "schema": { "$ref": "#/entities/Chat" },
+      "description": "Collection of direct chats and groups"
+    },
+    "/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/Message" },
+      "description": "Collection of chat messages"
+    }
+  }
+}

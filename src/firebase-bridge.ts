@@ -88,6 +88,17 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     path
   };
   console.error('Firestore Error: ', JSON.stringify(errInfo));
+  
+  // Hiển thị lỗi lên UI để người dùng biết
+  if (typeof (window as any).UI !== 'undefined' && typeof (window as any).UI.toast === 'function') {
+    if (errInfo.error.includes('Missing or insufficient permissions')) {
+      (window as any).UI.toast('Lỗi quyền truy cập Cloud (Firestore). Vui lòng cập nhật Security Rules!', 'error');
+    } else if (errInfo.error.includes('database')) {
+      (window as any).UI.toast('Không tìm thấy Database Firestore. Vui lòng tạo Database trong Firebase Console!', 'error');
+    } else {
+      (window as any).UI.toast('Lỗi kết nối Firebase: ' + errInfo.error, 'error');
+    }
+  }
 }
 
 // Cầu nối toàn cục Window.FirebaseBridge
@@ -282,6 +293,37 @@ const FirebaseBridge = {
     if (activeMessageUnsub) {
       activeMessageUnsub();
       activeMessageUnsub = null;
+    }
+  },
+
+  async syncAllLocalToCloud() {
+    try {
+      const localStore = (window as any).Storage;
+      if (!localStore) return;
+      
+      const chats = await localStore.getAll('chats');
+      const messages = await localStore.getAll('messages');
+      const links = await localStore.getAll('links');
+      const todos = await localStore.getAll('todos');
+
+      const promises = [];
+      if (chats) {
+        for (const chat of chats) promises.push(this.sendCloudChat(chat));
+      }
+      if (messages) {
+        for (const msg of messages) promises.push(this.sendCloudMessage(msg));
+      }
+      if (links) {
+        for (const link of links) promises.push(this.sendCloudLink(link));
+      }
+      if (todos) {
+        for (const todo of todos) promises.push(this.sendCloudTodo(todo));
+      }
+      
+      await Promise.all(promises);
+      console.log('✅ Đã đồng bộ toàn bộ dữ liệu cục bộ lên Cloud!');
+    } catch (err) {
+      console.error('Lỗi khi đồng bộ lên Cloud:', err);
     }
   }
 };

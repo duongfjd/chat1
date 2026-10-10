@@ -609,20 +609,12 @@ const App = (() => {
         // 1. Đồng bộ danh sách cuộc hội thoại (Chats)
         if (typeof window.FirebaseBridge.listenAllCloudChats === 'function') {
           window.FirebaseBridge.listenAllCloudChats(async (cloudChats) => {
-            if (cloudChats && cloudChats.length > 0) {
-              const cloudIds = new Set(cloudChats.map(c => c.id));
-              const localChats = await Storage.getAll('chats');
-              for (const lc of localChats) {
-                if (!cloudIds.has(lc.id)) {
-                  await Storage.delete('chats', lc.id);
-                }
-              }
+            if (cloudChats) {
+              await Storage.clearStore('chats');
               for (const c of cloudChats) {
                 await Storage.put('chats', c);
               }
               await this.renderSidebarChatList();
-            } else if (typeof window.FirebaseBridge.syncAllLocalToCloud === 'function') {
-              await window.FirebaseBridge.syncAllLocalToCloud();
             }
           });
         }
@@ -630,14 +622,8 @@ const App = (() => {
         // 2. Đồng bộ luồng tin nhắn (Messages)
         if (typeof window.FirebaseBridge.listenAllCloudMessages === 'function') {
           window.FirebaseBridge.listenAllCloudMessages(async (cloudMsgs) => {
-            if (cloudMsgs && cloudMsgs.length > 0) {
-              const cloudIds = new Set(cloudMsgs.map(m => m.id));
-              const localMsgs = await Storage.getAll('messages');
-              for (const lm of localMsgs) {
-                if (!cloudIds.has(lm.id)) {
-                  await Storage.delete('messages', lm.id);
-                }
-              }
+            if (cloudMsgs) {
+              await Storage.clearStore('messages');
               for (const m of cloudMsgs) {
                 await Storage.put('messages', m);
               }
@@ -648,6 +634,10 @@ const App = (() => {
                 const chats = await Storage.getAll('chats');
                 if (chats.length > 0) {
                   Chat.openConversation(chats[0].id);
+                } else {
+                  // Xóa khung chat nếu không có tin nhắn nào
+                  const msgContainer = document.getElementById('chat-messages-scroll');
+                  if (msgContainer) msgContainer.innerHTML = '';
                 }
               }
               await this.renderSidebarChatList();
@@ -658,7 +648,8 @@ const App = (() => {
         // 3. Đồng bộ Kho liên kết (Links)
         if (typeof window.FirebaseBridge.listenAllCloudLinks === 'function') {
           window.FirebaseBridge.listenAllCloudLinks(async (cloudLinks) => {
-            if (cloudLinks && cloudLinks.length > 0) {
+            if (cloudLinks) {
+              await Storage.clearStore('links');
               for (const l of cloudLinks) {
                 await Storage.put('links', l);
               }
@@ -669,7 +660,8 @@ const App = (() => {
         // 4. Đồng bộ Công việc nhóm (Todos)
         if (typeof window.FirebaseBridge.listenAllCloudTodos === 'function') {
           window.FirebaseBridge.listenAllCloudTodos(async (cloudTodos) => {
-            if (cloudTodos && cloudTodos.length > 0) {
+            if (cloudTodos) {
+              await Storage.clearStore('todos');
               for (const t of cloudTodos) {
                 await Storage.put('todos', t);
               }

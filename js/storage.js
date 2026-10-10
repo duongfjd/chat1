@@ -97,11 +97,7 @@ const Storage = (() => {
   return {
     async init() {
       await openDB();
-      // Khởi tạo dữ liệu mẫu nếu lần đầu mở ứng dụng
-      const users = await this.getAll('users');
-      if (!users || users.length === 0) {
-        await this.seedInitialData();
-      }
+      // Bỏ khởi tạo dữ liệu mẫu cục bộ, chỉ dùng dữ liệu từ Firebase
     },
 
     /* ========================================================================

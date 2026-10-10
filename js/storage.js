@@ -607,6 +607,29 @@ const Storage = (() => {
       for (const t of sampleTodos) {
         await this.put('todos', t);
       }
+
+      if (window.FirebaseBridge) {
+        for (const c of chats) {
+          if (typeof window.FirebaseBridge.sendCloudChat === 'function') {
+            await window.FirebaseBridge.sendCloudChat(c);
+          }
+        }
+        for (const m of messages) {
+          if (typeof window.FirebaseBridge.sendCloudMessage === 'function') {
+            await window.FirebaseBridge.sendCloudMessage(m);
+          }
+        }
+        for (const l of sampleLinks) {
+          if (typeof window.FirebaseBridge.sendCloudLink === 'function') {
+            await window.FirebaseBridge.sendCloudLink(l);
+          }
+        }
+        for (const t of sampleTodos) {
+          if (typeof window.FirebaseBridge.sendCloudTodo === 'function') {
+            await window.FirebaseBridge.sendCloudTodo(t);
+          }
+        }
+      }
     }
   };
 })();

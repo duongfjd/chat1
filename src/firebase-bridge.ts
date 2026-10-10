@@ -203,6 +203,56 @@ const FirebaseBridge = {
     }
   },
 
+  async sendCloudLink(link: any) {
+    try {
+      const linkRef = doc(db, 'links', link.id);
+      await setDoc(linkRef, link, { merge: true });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `links/${link.id}`);
+    }
+  },
+
+  async sendCloudTodo(todo: any) {
+    try {
+      const todoRef = doc(db, 'todos', todo.id);
+      await setDoc(todoRef, todo, { merge: true });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `todos/${todo.id}`);
+    }
+  },
+
+  listenAllCloudLinks(onLinksUpdate: (links: any[]) => void) {
+    try {
+      const q = query(collection(db, 'links'));
+      return onSnapshot(q, (snapshot) => {
+        const links: any[] = [];
+        snapshot.forEach((d) => links.push(d.data()));
+        onLinksUpdate(links);
+      }, (err) => {
+        handleFirestoreError(err, OperationType.GET, 'links');
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.GET, 'links');
+      return null;
+    }
+  },
+
+  listenAllCloudTodos(onTodosUpdate: (todos: any[]) => void) {
+    try {
+      const q = query(collection(db, 'todos'));
+      return onSnapshot(q, (snapshot) => {
+        const todos: any[] = [];
+        snapshot.forEach((d) => todos.push(d.data()));
+        onTodosUpdate(todos);
+      }, (err) => {
+        handleFirestoreError(err, OperationType.GET, 'todos');
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.GET, 'todos');
+      return null;
+    }
+  },
+
   listenCloudMessages(chatId: string, onMessagesUpdate: (messages: any[]) => void) {
     if (activeMessageUnsub) {
       activeMessageUnsub();

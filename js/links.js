@@ -36,6 +36,9 @@ const Links = (() => {
             createdAt: message.createdAt || Date.now()
           };
           await Storage.put('links', linkObj);
+          if (window.FirebaseBridge && typeof window.FirebaseBridge.sendCloudLink === 'function') {
+            window.FirebaseBridge.sendCloudLink(linkObj);
+          }
         }
       }
     },
@@ -142,6 +145,9 @@ const Links = (() => {
         };
 
         await Storage.put('links', newLink);
+        if (window.FirebaseBridge && typeof window.FirebaseBridge.sendCloudLink === 'function') {
+          window.FirebaseBridge.sendCloudLink(newLink);
+        }
         UI.closeModal();
         UI.toast('Đã lưu liên kết vào Kho Link!', 'success');
         if (typeof onAdded === 'function') onAdded(newLink);

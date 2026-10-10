@@ -632,6 +632,23 @@ const App = (() => {
                 await Chat.renderMessages();
               }
               await this.renderSidebarChatList();
+      // 3. Đồng bộ Kho liên kết (Links)
+      if (typeof window.FirebaseBridge.listenAllCloudLinks === 'function') {
+        window.FirebaseBridge.listenAllCloudLinks(async (cloudLinks) => {
+          if (cloudLinks && cloudLinks.length > 0) {
+            for (const l of cloudLinks) {
+              await Storage.put('links', l);
+            }
+          }
+        });
+      }
+
+      // 4. Đồng bộ Công việc nhóm (Todos)
+      if (typeof window.FirebaseBridge.listenAllCloudTodos === 'function') {
+        window.FirebaseBridge.listenAllCloudTodos(async (cloudTodos) => {
+          if (cloudTodos && cloudTodos.length > 0) {
+            for (const t of cloudTodos) {
+              await Storage.put('todos', t);
             }
           }
         });

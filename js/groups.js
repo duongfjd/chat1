@@ -214,6 +214,9 @@ const Groups = (() => {
         createdAt: Date.now()
       };
       await Storage.put('todos', todo);
+      if (window.FirebaseBridge && typeof window.FirebaseBridge.sendCloudTodo === 'function') {
+        window.FirebaseBridge.sendCloudTodo(todo);
+      }
       Transport.emit('TODO_UPDATED', { todo });
       return todo;
     },
@@ -223,6 +226,9 @@ const Groups = (() => {
       if (todo) {
         todo.done = !todo.done;
         await Storage.put('todos', todo);
+        if (window.FirebaseBridge && typeof window.FirebaseBridge.sendCloudTodo === 'function') {
+          window.FirebaseBridge.sendCloudTodo(todo);
+        }
         Transport.emit('TODO_UPDATED', { todo });
         return todo;
       }

@@ -97,7 +97,11 @@ const Storage = (() => {
   return {
     async init() {
       await openDB();
-      // Bỏ khởi tạo dữ liệu mẫu cục bộ, chỉ dùng dữ liệu từ Firebase
+      // Bỏ hẳn bộ nhớ đệm cục bộ cũ: Xóa toàn bộ dữ liệu trên IndexedDB khi khởi động
+      const stores = ['users', 'chats', 'messages', 'attachments', 'links', 'todos', 'folders'];
+      for (const st of stores) {
+        await this.clearStore(st);
+      }
     },
 
     /* ========================================================================

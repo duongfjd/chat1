@@ -159,6 +159,13 @@ const FirebaseBridge = {
         onChatsUpdate(chats);
       }, (err) => {
         console.error('Lỗi lắng nghe Chats Cloud:', err);
+        if (window.UI && typeof window.UI.toast === 'function') {
+          if (err.code === 'permission-denied') {
+            window.UI.toast('🔒 Lỗi quyền truy cập Firebase. Hãy mở allow read, write trong tab Rules!', 'error');
+          } else {
+            window.UI.toast('Lỗi Firebase: ' + err.message, 'error');
+          }
+        }
       });
     } catch (err) {
       console.error('Lỗi khởi tạo query Chats Cloud:', err);
@@ -177,6 +184,13 @@ const FirebaseBridge = {
         onMessagesUpdate(msgs);
       }, (err) => {
         console.error('Lỗi lắng nghe Messages Cloud:', err);
+        if (window.UI && typeof window.UI.toast === 'function') {
+          if (err.code === 'permission-denied') {
+            window.UI.toast('🔒 Lỗi quyền truy cập Firebase. Hãy mở allow read, write trong tab Rules!', 'error');
+          } else {
+            window.UI.toast('Lỗi Firebase: ' + err.message, 'error');
+          }
+        }
       });
     } catch (err) {
       console.error('Lỗi khởi tạo query Messages Cloud:', err);

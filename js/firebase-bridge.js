@@ -212,4 +212,5 @@ const FirebaseBridge = {
 };
 
 window.FirebaseBridge = FirebaseBridge;
+window.dispatchEvent(new CustomEvent('firebaseBridgeReady', { detail: FirebaseBridge }));
 export default FirebaseBridge;

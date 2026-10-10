@@ -2,27 +2,9 @@
  * ==========================================================================
  * QUICKCHAT - FIREBASE BRIDGE (Standalone Browser Version)
  * Kết nối Firebase Firestore & Authentication hoạt động trực tiếp trên mọi trình duyệt
+ * (Sử dụng Compat API để tránh lỗi CORS khi mở bằng file://)
  * ==========================================================================
  */
-
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { 
-  getAuth, 
-  GoogleAuthProvider, 
-  signInWithPopup, 
-  signInAnonymously,
-  signOut as fbSignOut, 
-  onAuthStateChanged 
-} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-import { 
-  getFirestore, 
-  doc, 
-  setDoc, 
-  collection, 
-  query, 
-  onSnapshot, 
-  deleteDoc 
-} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAU73F8fy4xckY_TW6Swqder9v1N1igVE4",
@@ -40,11 +22,15 @@ let db = null;
 let auth = null;
 
 try {
-  app = initializeApp(firebaseConfig);
-  db = getFirestore(app);
-  auth = getAuth(app);
-  signInAnonymously(auth).catch(() => {});
-  console.log('🔥 Firebase Bridge đã kết nối tới dự án quickchat-2-71087 thành công!');
+  if (typeof firebase !== 'undefined') {
+    app = firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    auth = firebase.auth();
+    auth.signInAnonymously().catch(() => {});
+    console.log('🔥 Firebase Bridge đã kết nối tới dự án quickchat-2-71087 thành công!');
+  } else {
+    console.error('❌ Thư viện Firebase chưa được tải!');
+  }
 } catch (err) {
   console.error('❌ Lỗi khởi tạo Firebase:', err);
 }
@@ -59,17 +45,17 @@ const FirebaseBridge = {
 
   onAuthStateChanged(callback) {
     if (!auth) return () => {};
-    return onAuthStateChanged(auth, callback);
+    return auth.onAuthStateChanged(callback);
   },
 
   async loginWithGoogle() {
     if (!auth) throw new Error('Firebase Auth chưa sẵn sàng');
-    const provider = new GoogleAuthProvider();
-    const res = await signInWithPopup(auth, provider);
+    const provider = new firebase.auth.GoogleAuthProvider();
+    const res = await auth.signInWithPopup(provider);
     const user = res.user;
 
-    const userDocRef = doc(db, 'users', user.uid);
-    await setDoc(userDocRef, {
+    const userDocRef = db.collection('users').doc(user.uid);
+    await userDocRef.set({
       id: user.uid,
       name: user.displayName || 'Google User',
       avatar: user.photoURL || '',
@@ -85,19 +71,19 @@ const FirebaseBridge = {
 
   async logout() {
     if (!auth) return;
-    return fbSignOut(auth);
+    return auth.signOut();
   },
 
   async sendCloudMessage(message) {
     if (!db) return;
     try {
-      const msgRef = doc(db, 'messages', message.id);
+      const msgRef = db.collection('messages').doc(message.id);
       const payload = { ...message };
       if (auth && auth.currentUser) {
         payload.cloudSenderId = auth.currentUser.uid;
         payload.cloudSenderEmail = auth.currentUser.email;
       }
-      await setDoc(msgRef, payload, { merge: true });
+      await msgRef.set(payload, { merge: true });
     } catch (err) {
       console.error('Lỗi gửi tin nhắn Cloud:', err);
       if (window.UI && typeof window.UI.toast === 'function' && err && err.code === 'permission-denied') {
@@ -109,8 +95,8 @@ const FirebaseBridge = {
   async sendCloudChat(chat) {
     if (!db) return;
     try {
-      const chatRef = doc(db, 'chats', chat.id);
-      await setDoc(chatRef, chat, { merge: true });
+      const chatRef = db.collection('chats').doc(chat.id);
+      await chatRef.set(chat, { merge: true });
     } catch (err) {
       console.error('Lỗi gửi chat Cloud:', err);
       if (window.UI && typeof window.UI.toast === 'function' && err && err.code === 'permission-denied') {
@@ -122,8 +108,8 @@ const FirebaseBridge = {
   async deleteCloudMessage(messageId) {
     if (!db) return;
     try {
-      const msgRef = doc(db, 'messages', messageId);
-      await setDoc(msgRef, { deleted: true, text: 'Tin nhắn đã bị xóa' }, { merge: true });
+      const msgRef = db.collection('messages').doc(messageId);
+      await msgRef.set({ deleted: true, text: 'Tin nhắn đã bị xóa' }, { merge: true });
     } catch (err) {
       console.error('Lỗi xóa tin nhắn Cloud:', err);
     }
@@ -132,8 +118,8 @@ const FirebaseBridge = {
   async sendCloudLink(link) {
     if (!db) return;
     try {
-      const linkRef = doc(db, 'links', link.id);
-      await setDoc(linkRef, link, { merge: true });
+      const linkRef = db.collection('links').doc(link.id);
+      await linkRef.set(link, { merge: true });
     } catch (err) {
       console.error('Lỗi gửi link Cloud:', err);
     }
@@ -142,8 +128,8 @@ const FirebaseBridge = {
   async sendCloudTodo(todo) {
     if (!db) return;
     try {
-      const todoRef = doc(db, 'todos', todo.id);
-      await setDoc(todoRef, todo, { merge: true });
+      const todoRef = db.collection('todos').doc(todo.id);
+      await todoRef.set(todo, { merge: true });
     } catch (err) {
       console.error('Lỗi gửi todo Cloud:', err);
     }
@@ -152,8 +138,7 @@ const FirebaseBridge = {
   listenAllCloudChats(onChatsUpdate) {
     if (!db) return null;
     try {
-      const q = query(collection(db, 'chats'));
-      return onSnapshot(q, (snapshot) => {
+      return db.collection('chats').onSnapshot((snapshot) => {
         const chats = [];
         snapshot.forEach((d) => chats.push(d.data()));
         onChatsUpdate(chats);
@@ -176,8 +161,7 @@ const FirebaseBridge = {
   listenAllCloudMessages(onMessagesUpdate) {
     if (!db) return null;
     try {
-      const q = query(collection(db, 'messages'));
-      return onSnapshot(q, (snapshot) => {
+      return db.collection('messages').onSnapshot((snapshot) => {
         const msgs = [];
         snapshot.forEach((d) => msgs.push(d.data()));
         msgs.sort((a, b) => a.createdAt - b.createdAt);
@@ -201,8 +185,7 @@ const FirebaseBridge = {
   listenAllCloudLinks(onLinksUpdate) {
     if (!db) return null;
     try {
-      const q = query(collection(db, 'links'));
-      return onSnapshot(q, (snapshot) => {
+      return db.collection('links').onSnapshot((snapshot) => {
         const links = [];
         snapshot.forEach((d) => links.push(d.data()));
         onLinksUpdate(links);
@@ -218,8 +201,7 @@ const FirebaseBridge = {
   listenAllCloudTodos(onTodosUpdate) {
     if (!db) return null;
     try {
-      const q = query(collection(db, 'todos'));
-      return onSnapshot(q, (snapshot) => {
+      return db.collection('todos').onSnapshot((snapshot) => {
         const todos = [];
         snapshot.forEach((d) => todos.push(d.data()));
         onTodosUpdate(todos);
@@ -260,4 +242,3 @@ const FirebaseBridge = {
 
 window.FirebaseBridge = FirebaseBridge;
 window.dispatchEvent(new CustomEvent('firebaseBridgeReady', { detail: FirebaseBridge }));
-export default FirebaseBridge;

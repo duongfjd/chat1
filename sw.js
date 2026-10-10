@@ -5,7 +5,7 @@
  * ==========================================================================
  */
 
-const CACHE_NAME = 'quickchat-cache-v1';
+const CACHE_NAME = 'quickchat-cache-v2';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -24,7 +24,8 @@ const STATIC_ASSETS = [
   './js/search.js',
   './js/settings.js',
   './js/chat.js',
-  './js/app.js'
+  './js/app.js',
+  './js/firebase-bridge.js'
 ];
 
 self.addEventListener('install', (e) => {
@@ -48,14 +49,24 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  // Chiến lược Cache First, Network Fallback
+  // Bỏ qua các request tới Firebase/Firestore để không bị cache
+  if (e.request.url.includes('firestore.googleapis.com') || e.request.url.includes('firebase')) {
+    return;
+  }
+
+  // Chiến lược Network First, Fallback Cache
   e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(e.request).catch(() => {
-        // Trả về index.html nếu mất mạng khi chuyển trang
+    fetch(e.request).then((networkResponse) => {
+      return caches.open(CACHE_NAME).then((cache) => {
+        // Cập nhật cache ngầm
+        cache.put(e.request, networkResponse.clone());
+        return networkResponse;
+      });
+    }).catch(() => {
+      return caches.match(e.request).then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
         if (e.request.mode === 'navigate') {
           return caches.match('./index.html');
         }

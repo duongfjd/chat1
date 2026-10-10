@@ -29,7 +29,7 @@ const firebaseConfig = {
   appId: "1:1015239187118:web:1265d9b4729f54e8cb2b3f",
   apiKey: "AIzaSyBYQkXM-DvJGdSrhaVXBkGhgtlBItzVVKA",
   authDomain: "gen-lang-client-0740689685.firebaseapp.com",
-  firestoreDatabaseId: "ai-studio-1c231e2f-2f3a-4b3c-88ac-e4439ef96504",
+  firestoreDatabaseId: "ai-studio-quickchatwebappn-a41e44ba-404a-49ba-a2f2-f36bf325f6f1",
   storageBucket: "gen-lang-client-0740689685.firebasestorage.app",
   messagingSenderId: "1015239187118"
 };

@@ -610,6 +610,13 @@ const App = (() => {
         if (typeof window.FirebaseBridge.listenAllCloudChats === 'function') {
           window.FirebaseBridge.listenAllCloudChats(async (cloudChats) => {
             if (cloudChats && cloudChats.length > 0) {
+              const cloudIds = new Set(cloudChats.map(c => c.id));
+              const localChats = await Storage.getAll('chats');
+              for (const lc of localChats) {
+                if (!cloudIds.has(lc.id)) {
+                  await Storage.delete('chats', lc.id);
+                }
+              }
               for (const c of cloudChats) {
                 await Storage.put('chats', c);
               }
@@ -624,13 +631,15 @@ const App = (() => {
         if (typeof window.FirebaseBridge.listenAllCloudMessages === 'function') {
           window.FirebaseBridge.listenAllCloudMessages(async (cloudMsgs) => {
             if (cloudMsgs && cloudMsgs.length > 0) {
-              let hasNew = false;
-              for (const m of cloudMsgs) {
-                const existing = await Storage.get('messages', m.id);
-                if (!existing || JSON.stringify(existing) !== JSON.stringify(m)) {
-                  await Storage.put('messages', m);
-                  hasNew = true;
+              const cloudIds = new Set(cloudMsgs.map(m => m.id));
+              const localMsgs = await Storage.getAll('messages');
+              for (const lm of localMsgs) {
+                if (!cloudIds.has(lm.id)) {
+                  await Storage.delete('messages', lm.id);
                 }
+              }
+              for (const m of cloudMsgs) {
+                await Storage.put('messages', m);
               }
               const activeChat = Chat.getActiveChat();
               if (activeChat) {

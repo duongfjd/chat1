@@ -1,8 +1,6 @@
 /**
  * ==========================================================================
- * QUICKCHAT - FIREBASE BRIDGE (Standalone Browser Version)
- * Kết nối Firebase Firestore & Authentication hoạt động trực tiếp trên mọi trình duyệt
- * (Sử dụng Compat API để tránh lỗi CORS khi mở bằng file://)
+ * QUICKCHAT - FIREBASE BRIDGE (REBUILT WITH ON-SCREEN DEBUGGER)
  * ==========================================================================
  */
 
@@ -16,259 +14,118 @@ const firebaseConfig = {
   measurementId: "G-H7M6HDY3P2"
 };
 
-// Khởi tạo Firebase
-let app = null;
-let db = null;
-let auth = null;
+// --- ON-SCREEN DEBUGGER ---
+function logDebug(msg, isError = false) {
+  console[isError ? 'error' : 'log'](msg);
+  let panel = document.getElementById('firebase-debug-panel');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'firebase-debug-panel';
+    panel.style.cssText = 'position:fixed;bottom:10px;left:10px;width:320px;height:200px;background:rgba(0,0,0,0.85);color:#0f0;font-family:monospace;font-size:11px;padding:10px;overflow-y:auto;z-index:99999;border-radius:8px;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,0.5);';
+    document.body.appendChild(panel);
+  }
+  const line = document.createElement('div');
+  line.style.color = isError ? '#ff4444' : '#00ff00';
+  line.style.marginBottom = '4px';
+  line.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
+  line.style.paddingBottom = '2px';
+  line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  panel.appendChild(line);
+  panel.scrollTop = panel.scrollHeight;
+}
+
+// --- FIREBASE INIT ---
+let app = null, db = null, auth = null;
 
 try {
+  logDebug('Đang khởi tạo Firebase...');
   if (typeof firebase !== 'undefined') {
     app = firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     auth = firebase.auth();
+    logDebug('Firebase Core & Firestore OK.');
     
-    // Đăng nhập Ẩn danh mặc định nếu chưa đăng nhập Google
     auth.onAuthStateChanged(async (user) => {
       if (user) {
-        // Lưu đúng format key của class Storage: 'qc_setting_current_user_id'
+        logDebug(`Auth hợp lệ: ${user.uid}`);
         localStorage.setItem('qc_setting_current_user_id', JSON.stringify(user.uid));
-        if (window.Storage) {
-          await Storage.put('users', {
-            id: user.uid,
-            name: user.displayName || 'Khách (Online)',
-            avatar: user.photoURL || '',
-            color: '#10b981',
-            type: 'self'
-          });
-        }
+        window.dispatchEvent(new CustomEvent('firebaseBridgeAuthReady', { detail: user }));
       } else {
+        logDebug('Chưa Auth, đang thử ẩn danh...');
         auth.signInAnonymously().catch((err) => {
-          console.error('Lỗi đăng nhập ẩn danh:', err);
-          alert('❌ FIREBASE AUTH BỊ CHẶN!\n\nLỗi: ' + err.message + '\n\nNếu bạn đang chạy trên GitHub Pages, hãy vào Firebase Console -> Authentication -> Settings -> Authorized domains -> Thêm domain của bạn vào (ví dụ: duongfjd.github.io) để cho phép đăng nhập!');
+          logDebug(`LỖI AUTH: ${err.message}`, true);
+          alert('Firebase Auth Lỗi: ' + err.message);
         });
       }
     });
-
-    console.log('🔥 Firebase Bridge đã kết nối tới dự án quickchat-2-71087 thành công!');
   } else {
-    console.error('❌ Thư viện Firebase chưa được tải!');
+    logDebug('LỖI: firebase SDK không tồn tại!', true);
   }
 } catch (err) {
-  console.error('❌ Lỗi khởi tạo Firebase:', err);
+  logDebug(`LỖI INIT: ${err.message}`, true);
 }
 
 const FirebaseBridge = {
   isAvailable: !!db,
-  projectId: firebaseConfig.projectId,
-
-  getAuthUser() {
-    return auth ? auth.currentUser : null;
-  },
-
-  onAuthStateChanged(callback) {
-    if (!auth) return () => {};
-    return auth.onAuthStateChanged(callback);
-  },
-
-  async loginWithGoogle() {
-    if (!auth) throw new Error('Firebase Auth chưa sẵn sàng');
-    const provider = new firebase.auth.GoogleAuthProvider();
-    const res = await auth.signInWithPopup(provider);
-    const user = res.user;
-
-    localStorage.setItem('qc_setting_current_user_id', JSON.stringify(user.uid));
-
-    const userDocRef = db.collection('users').doc(user.uid);
-    const userData = {
-      id: user.uid,
-      name: user.displayName || 'Google User',
-      avatar: user.photoURL || '',
-      email: user.email || '',
-      color: '#5b6cff',
-      status: 'online',
-      statusText: 'Đã kết nối qua Google Cloud',
-      createdAt: Date.now()
-    };
-    
-    await userDocRef.set(userData, { merge: true });
-    if (window.Storage) {
-      await Storage.put('users', userData);
-    }
-
-    return user;
-  },
-
-  async logout() {
+  
+  onAuthStateChanged(cb) {
     if (!auth) return;
-    localStorage.removeItem('qc_setting_current_user_id');
-    return auth.signOut();
+    auth.onAuthStateChanged(cb);
   },
 
   async sendCloudMessage(message) {
     if (!db) return;
     try {
-      const msgRef = db.collection('messages').doc(message.id);
+      logDebug(`Đang gửi tin nhắn: ${message.id}...`);
       const payload = { ...message };
       if (auth && auth.currentUser) {
-        payload.cloudSenderId = auth.currentUser.uid;
-        payload.cloudSenderEmail = auth.currentUser.email;
+        payload.senderId = auth.currentUser.uid;
       }
-      await msgRef.set(payload, { merge: true });
+      await db.collection('messages').doc(message.id).set(payload, { merge: true });
+      logDebug(`Gửi tin nhắn OK: ${message.id}`);
     } catch (err) {
-      console.error('Lỗi gửi tin nhắn Cloud:', err);
-      if (window.UI && typeof window.UI.toast === 'function' && err && err.code === 'permission-denied') {
-        window.UI.toast('🔒 Vui lòng vào tab Rules trên Firebase Console mở allow read, write!', 'error');
-      }
+      logDebug(`LỖI gửi tin nhắn: ${err.message}`, true);
     }
   },
 
   async sendCloudChat(chat) {
     if (!db) return;
     try {
-      const chatRef = db.collection('chats').doc(chat.id);
-      await chatRef.set(chat, { merge: true });
+      logDebug(`Đang tạo/cập nhật chat: ${chat.id}...`);
+      await db.collection('chats').doc(chat.id).set(chat, { merge: true });
+      logDebug(`Cập nhật chat OK: ${chat.id}`);
     } catch (err) {
-      console.error('Lỗi gửi chat Cloud:', err);
-      if (window.UI && typeof window.UI.toast === 'function' && err && err.code === 'permission-denied') {
-        window.UI.toast('🔒 Vui lòng vào tab Rules trên Firebase Console mở allow read, write!', 'error');
-      }
+      logDebug(`LỖI gửi chat: ${err.message}`, true);
     }
   },
 
-  async deleteCloudMessage(messageId) {
+  listenAllCloudChats(onUpdate) {
     if (!db) return;
-    try {
-      const msgRef = db.collection('messages').doc(messageId);
-      await msgRef.set({ deleted: true, text: 'Tin nhắn đã bị xóa' }, { merge: true });
-    } catch (err) {
-      console.error('Lỗi xóa tin nhắn Cloud:', err);
-    }
+    logDebug('Bắt đầu lắng nghe Chats...');
+    return db.collection('chats').onSnapshot((snap) => {
+      const arr = [];
+      snap.forEach(d => arr.push(d.data()));
+      logDebug(`Nhận ${arr.length} chats từ Cloud.`);
+      onUpdate(arr);
+    }, (err) => {
+      logDebug(`LỖI nghe Chats: ${err.message}`, true);
+    });
   },
 
-  async sendCloudLink(link) {
+  listenAllCloudMessages(onUpdate) {
     if (!db) return;
-    try {
-      const linkRef = db.collection('links').doc(link.id);
-      await linkRef.set(link, { merge: true });
-    } catch (err) {
-      console.error('Lỗi gửi link Cloud:', err);
-    }
-  },
-
-  async sendCloudTodo(todo) {
-    if (!db) return;
-    try {
-      const todoRef = db.collection('todos').doc(todo.id);
-      await todoRef.set(todo, { merge: true });
-    } catch (err) {
-      console.error('Lỗi gửi todo Cloud:', err);
-    }
-  },
-
-  listenAllCloudChats(onChatsUpdate) {
-    if (!db) return null;
-    try {
-      return db.collection('chats').onSnapshot((snapshot) => {
-        const chats = [];
-        snapshot.forEach((d) => chats.push(d.data()));
-        onChatsUpdate(chats);
-      }, (err) => {
-        console.error('Lỗi lắng nghe Chats Cloud:', err);
-        if (window.UI && typeof window.UI.toast === 'function') {
-          if (err.code === 'permission-denied') {
-            window.UI.toast('🔒 Lỗi quyền truy cập Firebase. Hãy mở allow read, write trong tab Rules!', 'error');
-          } else {
-            window.UI.toast('Lỗi Firebase: ' + err.message, 'error');
-          }
-        }
-      });
-    } catch (err) {
-      console.error('Lỗi khởi tạo query Chats Cloud:', err);
-      return null;
-    }
-  },
-
-  listenAllCloudMessages(onMessagesUpdate) {
-    if (!db) return null;
-    try {
-      return db.collection('messages').onSnapshot((snapshot) => {
-        const msgs = [];
-        snapshot.forEach((d) => msgs.push(d.data()));
-        msgs.sort((a, b) => a.createdAt - b.createdAt);
-        onMessagesUpdate(msgs);
-      }, (err) => {
-        console.error('Lỗi lắng nghe Messages Cloud:', err);
-        if (window.UI && typeof window.UI.toast === 'function') {
-          if (err.code === 'permission-denied') {
-            window.UI.toast('🔒 Lỗi quyền truy cập Firebase. Hãy mở allow read, write trong tab Rules!', 'error');
-          } else {
-            window.UI.toast('Lỗi Firebase: ' + err.message, 'error');
-          }
-        }
-      });
-    } catch (err) {
-      console.error('Lỗi khởi tạo query Messages Cloud:', err);
-      return null;
-    }
-  },
-
-  listenAllCloudLinks(onLinksUpdate) {
-    if (!db) return null;
-    try {
-      return db.collection('links').onSnapshot((snapshot) => {
-        const links = [];
-        snapshot.forEach((d) => links.push(d.data()));
-        onLinksUpdate(links);
-      }, (err) => {
-        console.error('Lỗi lắng nghe Links Cloud:', err);
-      });
-    } catch (err) {
-      console.error('Lỗi khởi tạo query Links Cloud:', err);
-      return null;
-    }
-  },
-
-  listenAllCloudTodos(onTodosUpdate) {
-    if (!db) return null;
-    try {
-      return db.collection('todos').onSnapshot((snapshot) => {
-        const todos = [];
-        snapshot.forEach((d) => todos.push(d.data()));
-        onTodosUpdate(todos);
-      }, (err) => {
-        console.error('Lỗi lắng nghe Todos Cloud:', err);
-      });
-    } catch (err) {
-      console.error('Lỗi khởi tạo query Todos Cloud:', err);
-      return null;
-    }
-  },
-
-  async syncAllLocalToCloud() {
-    if (!db || !window.Storage) return;
-    try {
-      const chats = await Storage.getAll('chats');
-      for (const c of chats) {
-        await this.sendCloudChat(c);
-      }
-      const messages = await Storage.getAll('messages');
-      for (const m of messages) {
-        await this.sendCloudMessage(m);
-      }
-      const links = await Storage.getAll('links');
-      for (const l of links) {
-        await this.sendCloudLink(l);
-      }
-      const todos = await Storage.getAll('todos');
-      for (const t of todos) {
-        await this.sendCloudTodo(t);
-      }
-      console.log('✨ Đã đồng bộ toàn bộ dữ liệu cục bộ lên Firestore Cloud!');
-    } catch (err) {
-      console.error('Lỗi đẩy dữ liệu lên Firestore:', err);
-    }
+    logDebug('Bắt đầu lắng nghe Messages...');
+    return db.collection('messages').onSnapshot((snap) => {
+      const arr = [];
+      snap.forEach(d => arr.push(d.data()));
+      arr.sort((a, b) => a.createdAt - b.createdAt);
+      logDebug(`Nhận ${arr.length} messages từ Cloud.`);
+      onUpdate(arr);
+    }, (err) => {
+      logDebug(`LỖI nghe Messages: ${err.message}`, true);
+    });
   }
 };
 
 window.FirebaseBridge = FirebaseBridge;
-window.dispatchEvent(new CustomEvent('firebaseBridgeReady', { detail: FirebaseBridge }));
+logDebug('Cầu nối Firebase Bridge sẵn sàng.');

@@ -193,9 +193,14 @@ const Transport = (() => {
       // Phát sự kiện tin nhắn mới
       this.emit('NEW_MESSAGE', { message, chat });
 
-      // Nếu đang kết nối Firebase và đã đăng nhập, đồng bộ lên Firestore Cloud
-      if (window.FirebaseBridge && typeof window.FirebaseBridge.sendCloudMessage === 'function') {
-        window.FirebaseBridge.sendCloudMessage(message);
+      // Nếu đang kết nối Firebase, đồng bộ tin nhắn và cuộc hội thoại lên Firestore Cloud
+      if (window.FirebaseBridge) {
+        if (typeof window.FirebaseBridge.sendCloudMessage === 'function') {
+          window.FirebaseBridge.sendCloudMessage(message);
+        }
+        if (typeof window.FirebaseBridge.sendCloudChat === 'function') {
+          window.FirebaseBridge.sendCloudChat(chat);
+        }
       }
 
       // Gọi trợ lý ảo QuickBot phản hồi tự động nếu áp dụng

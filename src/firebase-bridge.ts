@@ -139,16 +139,67 @@ const FirebaseBridge = {
   },
 
   async sendCloudMessage(message: any) {
-    if (!auth.currentUser) return;
     try {
       const msgRef = doc(db, 'messages', message.id);
-      await setDoc(msgRef, {
-        ...message,
-        senderId: auth.currentUser.uid,
-        senderEmail: auth.currentUser.email
-      });
+      const payload = { ...message };
+      if (auth.currentUser) {
+        payload.cloudSenderId = auth.currentUser.uid;
+        payload.cloudSenderEmail = auth.currentUser.email;
+      }
+      await setDoc(msgRef, payload, { merge: true });
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, `messages/${message.id}`);
+    }
+  },
+
+  async sendCloudChat(chat: any) {
+    try {
+      const chatRef = doc(db, 'chats', chat.id);
+      await setDoc(chatRef, chat, { merge: true });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `chats/${chat.id}`);
+    }
+  },
+
+  async deleteCloudMessage(messageId: string) {
+    try {
+      const msgRef = doc(db, 'messages', messageId);
+      await setDoc(msgRef, { deleted: true, text: 'Tin nhắn đã bị xóa' }, { merge: true });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `messages/${messageId}`);
+    }
+  },
+
+  listenAllCloudChats(onChatsUpdate: (chats: any[]) => void) {
+    try {
+      const q = query(collection(db, 'chats'));
+      return onSnapshot(q, (snapshot) => {
+        const chats: any[] = [];
+        snapshot.forEach((d) => chats.push(d.data()));
+        onChatsUpdate(chats);
+      }, (err) => {
+        handleFirestoreError(err, OperationType.GET, 'chats');
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.GET, 'chats');
+      return null;
+    }
+  },
+
+  listenAllCloudMessages(onMessagesUpdate: (messages: any[]) => void) {
+    try {
+      const q = query(collection(db, 'messages'));
+      return onSnapshot(q, (snapshot) => {
+        const msgs: any[] = [];
+        snapshot.forEach((d) => msgs.push(d.data()));
+        msgs.sort((a, b) => a.createdAt - b.createdAt);
+        onMessagesUpdate(msgs);
+      }, (err) => {
+        handleFirestoreError(err, OperationType.GET, 'messages');
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.GET, 'messages');
+      return null;
     }
   },
 
@@ -157,8 +208,6 @@ const FirebaseBridge = {
       activeMessageUnsub();
       activeMessageUnsub = null;
     }
-
-    if (!auth.currentUser) return;
 
     try {
       const q = query(
@@ -188,3 +237,4 @@ const FirebaseBridge = {
 };
 
 (window as any).FirebaseBridge = FirebaseBridge;
+

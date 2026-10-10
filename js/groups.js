@@ -125,6 +125,15 @@ const Groups = (() => {
         newGroup.lastMessageId = welcomeMsg.id;
         await Storage.put('chats', newGroup);
 
+        if (window.FirebaseBridge) {
+          if (typeof window.FirebaseBridge.sendCloudChat === 'function') {
+            window.FirebaseBridge.sendCloudChat(newGroup);
+          }
+          if (typeof window.FirebaseBridge.sendCloudMessage === 'function') {
+            window.FirebaseBridge.sendCloudMessage(welcomeMsg);
+          }
+        }
+
         UI.closeModal();
         UI.toast(`Đã tạo nhóm "${name}" thành công!`, 'success');
         if (typeof onCreated === 'function') onCreated(newGroup);

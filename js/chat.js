@@ -509,6 +509,9 @@ const Chat = (() => {
             });
             if (ok) {
               await Storage.delete('messages', msg.id);
+              if (window.FirebaseBridge && typeof window.FirebaseBridge.deleteCloudMessage === 'function') {
+                window.FirebaseBridge.deleteCloudMessage(msg.id);
+              }
               await this.renderMessages();
               UI.toast('Đã xóa tin nhắn.', 'info');
             }
@@ -547,6 +550,9 @@ const Chat = (() => {
       });
 
       await Storage.put('messages', msg);
+      if (window.FirebaseBridge && typeof window.FirebaseBridge.sendCloudMessage === 'function') {
+        window.FirebaseBridge.sendCloudMessage(msg);
+      }
       Transport.emit('POLL_VOTED', { msgId, optId });
       await this.renderMessages();
     },
@@ -576,6 +582,9 @@ const Chat = (() => {
       }
 
       await Storage.put('messages', msg);
+      if (window.FirebaseBridge && typeof window.FirebaseBridge.sendCloudMessage === 'function') {
+        window.FirebaseBridge.sendCloudMessage(msg);
+      }
       Transport.emit('REACTION_TOGGLED', { msgId, emoji });
       await this.renderMessages();
     },
@@ -695,6 +704,9 @@ const Chat = (() => {
         activeEditingMessage.text = text;
         activeEditingMessage.edited = true;
         await Storage.put('messages', activeEditingMessage);
+        if (window.FirebaseBridge && typeof window.FirebaseBridge.sendCloudMessage === 'function') {
+          window.FirebaseBridge.sendCloudMessage(activeEditingMessage);
+        }
         this.cancelReplyOrEdit();
         input.value = '';
         this.autoResizeTextarea(input);

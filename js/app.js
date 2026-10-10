@@ -28,6 +28,7 @@ const App = (() => {
       this.bindKeyboardShortcuts();
       this.bindNetworkAndPWAEvents();
       this.bindTransportEvents();
+      this.bindCloudSync();
 
       // 4. Dựng danh sách hội thoại ban đầu
       await this.renderSidebarChatList();
@@ -592,8 +593,49 @@ const App = (() => {
               typingContainer.innerHTML = '';
             }
           }
-        }
       });
+    },
+
+    /**
+     * Lắng nghe và đồng bộ dữ liệu đám mây thời gian thực từ Firebase Firestore
+     */
+    bindCloudSync() {
+      if (!window.FirebaseBridge) return;
+
+      // 1. Đồng bộ danh sách cuộc hội thoại (Chats)
+      if (typeof window.FirebaseBridge.listenAllCloudChats === 'function') {
+        window.FirebaseBridge.listenAllCloudChats(async (cloudChats) => {
+          if (cloudChats && cloudChats.length > 0) {
+            for (const c of cloudChats) {
+              await Storage.put('chats', c);
+            }
+            await this.renderSidebarChatList();
+          }
+        });
+      }
+
+      // 2. Đồng bộ luồng tin nhắn (Messages)
+      if (typeof window.FirebaseBridge.listenAllCloudMessages === 'function') {
+        window.FirebaseBridge.listenAllCloudMessages(async (cloudMsgs) => {
+          if (cloudMsgs && cloudMsgs.length > 0) {
+            let hasNew = false;
+            for (const m of cloudMsgs) {
+              const existing = await Storage.get('messages', m.id);
+              if (!existing || JSON.stringify(existing) !== JSON.stringify(m)) {
+                await Storage.put('messages', m);
+                hasNew = true;
+              }
+            }
+            if (hasNew) {
+              const activeChat = Chat.getActiveChat();
+              if (activeChat) {
+                await Chat.renderMessages();
+              }
+              await this.renderSidebarChatList();
+            }
+          }
+        });
+      }
     }
   };
 })();

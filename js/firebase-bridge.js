@@ -30,7 +30,8 @@ try {
     // Đăng nhập Ẩn danh mặc định nếu chưa đăng nhập Google
     auth.onAuthStateChanged(async (user) => {
       if (user) {
-        localStorage.setItem('qc_current_user_id', user.uid);
+        // Lưu đúng format key của class Storage: 'qc_setting_current_user_id'
+        localStorage.setItem('qc_setting_current_user_id', JSON.stringify(user.uid));
         if (window.Storage) {
           await Storage.put('users', {
             id: user.uid,
@@ -72,7 +73,7 @@ const FirebaseBridge = {
     const res = await auth.signInWithPopup(provider);
     const user = res.user;
 
-    localStorage.setItem('qc_current_user_id', user.uid);
+    localStorage.setItem('qc_setting_current_user_id', JSON.stringify(user.uid));
 
     const userDocRef = db.collection('users').doc(user.uid);
     const userData = {
@@ -96,7 +97,7 @@ const FirebaseBridge = {
 
   async logout() {
     if (!auth) return;
-    localStorage.removeItem('qc_current_user_id');
+    localStorage.removeItem('qc_setting_current_user_id');
     return auth.signOut();
   },
 

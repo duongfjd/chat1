@@ -33,6 +33,24 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    
+    <!-- ANTI-CACHE SCRIPT: Ép buộc trình duyệt xóa sạch Service Worker & Caches để nhận code mới -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for(let registration of registrations) {
+            registration.unregister();
+            console.log('Đã gỡ bỏ Service Worker cũ!');
+          }
+        });
+      }
+      if (window.caches) {
+        caches.keys().then(function(names) {
+          for (let name of names) caches.delete(name);
+        });
+      }
+    </script>
+
     <script src="js/firebase-bridge.js"></script>
 
     <!-- Tải trước các module JavaScript theo thứ tự phân lớp chuẩn -->

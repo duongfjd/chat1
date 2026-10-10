@@ -42,7 +42,10 @@ try {
           });
         }
       } else {
-        auth.signInAnonymously().catch(() => {});
+        auth.signInAnonymously().catch((err) => {
+          console.error('Lỗi đăng nhập ẩn danh:', err);
+          alert('❌ FIREBASE AUTH BỊ CHẶN!\n\nLỗi: ' + err.message + '\n\nNếu bạn đang chạy trên GitHub Pages, hãy vào Firebase Console -> Authentication -> Settings -> Authorized domains -> Thêm domain của bạn vào (ví dụ: duongfjd.github.io) để cho phép đăng nhập!');
+        });
       }
     });
 

@@ -604,70 +604,76 @@ const App = (() => {
 
       const initListeners = () => {
         if (isInitialized || !window.FirebaseBridge) return;
-        isInitialized = true;
-
-        // 1. Đồng bộ danh sách cuộc hội thoại (Chats)
-        if (typeof window.FirebaseBridge.listenAllCloudChats === 'function') {
-          window.FirebaseBridge.listenAllCloudChats(async (cloudChats) => {
-            if (cloudChats) {
-              await Storage.clearStore('chats');
-              for (const c of cloudChats) {
-                await Storage.put('chats', c);
-              }
-              await this.renderSidebarChatList();
-            }
-          });
-        }
-
-        // 2. Đồng bộ luồng tin nhắn (Messages)
-        if (typeof window.FirebaseBridge.listenAllCloudMessages === 'function') {
-          window.FirebaseBridge.listenAllCloudMessages(async (cloudMsgs) => {
-            if (cloudMsgs) {
-              await Storage.clearStore('messages');
-              for (const m of cloudMsgs) {
-                await Storage.put('messages', m);
-              }
-              const activeChat = Chat.getActiveChat();
-              if (activeChat) {
-                await Chat.renderMessages();
-              } else {
-                const chats = await Storage.getAll('chats');
-                if (chats.length > 0) {
-                  Chat.openConversation(chats[0].id);
-                } else {
-                  // Xóa khung chat nếu không có tin nhắn nào
-                  const msgContainer = document.getElementById('chat-messages-scroll');
-                  if (msgContainer) msgContainer.innerHTML = '';
+        
+        // Bắt buộc phải chờ Auth hoàn tất mới gắn Listener để tránh lỗi permission-denied
+        window.FirebaseBridge.onAuthStateChanged((user) => {
+          if (user) {
+            if (isInitialized) return;
+            isInitialized = true;
+            
+            // 1. Đồng bộ danh sách cuộc hội thoại (Chats)
+            if (typeof window.FirebaseBridge.listenAllCloudChats === 'function') {
+              window.FirebaseBridge.listenAllCloudChats(async (cloudChats) => {
+                if (cloudChats) {
+                  await Storage.clearStore('chats');
+                  for (const c of cloudChats) {
+                    await Storage.put('chats', c);
+                  }
+                  await this.renderSidebarChatList();
                 }
-              }
-              await this.renderSidebarChatList();
+              });
             }
-          });
-        }
 
-        // 3. Đồng bộ Kho liên kết (Links)
-        if (typeof window.FirebaseBridge.listenAllCloudLinks === 'function') {
-          window.FirebaseBridge.listenAllCloudLinks(async (cloudLinks) => {
-            if (cloudLinks) {
-              await Storage.clearStore('links');
-              for (const l of cloudLinks) {
-                await Storage.put('links', l);
-              }
+            // 2. Đồng bộ luồng tin nhắn (Messages)
+            if (typeof window.FirebaseBridge.listenAllCloudMessages === 'function') {
+              window.FirebaseBridge.listenAllCloudMessages(async (cloudMsgs) => {
+                if (cloudMsgs) {
+                  await Storage.clearStore('messages');
+                  for (const m of cloudMsgs) {
+                    await Storage.put('messages', m);
+                  }
+                  const activeChat = Chat.getActiveChat();
+                  if (activeChat) {
+                    await Chat.renderMessages();
+                  } else {
+                    const chats = await Storage.getAll('chats');
+                    if (chats.length > 0) {
+                      Chat.openConversation(chats[0].id);
+                    } else {
+                      const msgContainer = document.getElementById('chat-messages-scroll');
+                      if (msgContainer) msgContainer.innerHTML = '';
+                    }
+                  }
+                  await this.renderSidebarChatList();
+                }
+              });
             }
-          });
-        }
 
-        // 4. Đồng bộ Công việc nhóm (Todos)
-        if (typeof window.FirebaseBridge.listenAllCloudTodos === 'function') {
-          window.FirebaseBridge.listenAllCloudTodos(async (cloudTodos) => {
-            if (cloudTodos) {
-              await Storage.clearStore('todos');
-              for (const t of cloudTodos) {
-                await Storage.put('todos', t);
-              }
+            // 3. Đồng bộ Kho liên kết (Links)
+            if (typeof window.FirebaseBridge.listenAllCloudLinks === 'function') {
+              window.FirebaseBridge.listenAllCloudLinks(async (cloudLinks) => {
+                if (cloudLinks) {
+                  await Storage.clearStore('links');
+                  for (const l of cloudLinks) {
+                    await Storage.put('links', l);
+                  }
+                }
+              });
             }
-          });
-        }
+
+            // 4. Đồng bộ Công việc nhóm (Todos)
+            if (typeof window.FirebaseBridge.listenAllCloudTodos === 'function') {
+              window.FirebaseBridge.listenAllCloudTodos(async (cloudTodos) => {
+                if (cloudTodos) {
+                  await Storage.clearStore('todos');
+                  for (const t of cloudTodos) {
+                    await Storage.put('todos', t);
+                  }
+                }
+              });
+            }
+          }
+        });
       };
 
       if (window.FirebaseBridge) {
@@ -676,16 +682,6 @@ const App = (() => {
         window.addEventListener('firebaseBridgeReady', () => {
           initListeners();
         });
-        let attempts = 0;
-        const interval = setInterval(() => {
-          attempts++;
-          if (window.FirebaseBridge) {
-            clearInterval(interval);
-            initListeners();
-          } else if (attempts > 30) {
-            clearInterval(interval);
-          }
-        }, 150);
       }
     }
   };

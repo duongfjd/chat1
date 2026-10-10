@@ -88,7 +88,7 @@ const Settings = (() => {
               <span style="font-size: 11px; padding: 2px 8px; border-radius: 99px; background: rgba(16, 185, 129, 0.15); color: var(--color-success); font-weight: 600;">Đã kết nối Firestore</span>
             </div>
             <p style="font-size: var(--font-size-xs); color: var(--text-muted); margin-bottom: 14px;">
-              Dự án <strong>gen-lang-client-0740689685</strong> đã kích hoạt Firestore. Đăng nhập tài khoản Google để đồng bộ tin nhắn đám mây xuyên thiết bị.
+              Dự án <strong>quickchat-2-71087</strong> đã kích hoạt Firestore. Tự động đồng bộ tin nhắn đám mây thời gian thực xuyên tất cả thiết bị.
             </p>
             <div id="firebase-auth-section" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
               <button class="btn btn-primary fb-login-btn" style="display: flex; align-items: center; gap: 8px;">

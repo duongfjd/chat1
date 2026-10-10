@@ -25,13 +25,13 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
 const firebaseConfig = {
-  projectId: "gen-lang-client-0740689685",
-  appId: "1:1015239187118:web:1265d9b4729f54e8cb2b3f",
-  apiKey: "AIzaSyBYQkXM-DvJGdSrhaVXBkGhgtlBItzVVKA",
-  authDomain: "gen-lang-client-0740689685.firebaseapp.com",
-  firestoreDatabaseId: "ai-studio-quickchatwebappn-a41e44ba-404a-49ba-a2f2-f36bf325f6f1",
-  storageBucket: "gen-lang-client-0740689685.firebasestorage.app",
-  messagingSenderId: "1015239187118"
+  apiKey: "AIzaSyAU73F8fy4xckY_TW6Swqder9v1N1igVE4",
+  authDomain: "quickchat-2-71087.firebaseapp.com",
+  projectId: "quickchat-2-71087",
+  storageBucket: "quickchat-2-71087.firebasestorage.app",
+  messagingSenderId: "1018146838092",
+  appId: "1:1018146838092:web:bad81824cad4c6c65286e9",
+  measurementId: "G-H7M6HDY3P2"
 };
 
 // Khởi tạo Firebase
@@ -41,14 +41,10 @@ let auth = null;
 
 try {
   app = initializeApp(firebaseConfig);
-  try {
-    db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-  } catch {
-    db = getFirestore(app);
-  }
+  db = getFirestore(app);
   auth = getAuth(app);
   signInAnonymously(auth).catch(() => {});
-  console.log('🔥 Firebase Bridge đã khởi tạo thành công!');
+  console.log('🔥 Firebase Bridge đã kết nối tới dự án quickchat-2-71087 thành công!');
 } catch (err) {
   console.error('❌ Lỗi khởi tạo Firebase:', err);
 }

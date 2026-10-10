@@ -37,7 +37,7 @@ import firebaseConfig from '../firebase-applet-config.json';
 
 // Khởi tạo Firebase App
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId); /* CRITICAL: The app will break without this line */
+export const db = getFirestore(app);
 export const auth = getAuth(app);
 
 // Kiểm tra kết nối Firestore Server theo chuẩn kỹ thuật

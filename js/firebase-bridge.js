@@ -26,7 +26,25 @@ try {
     app = firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     auth = firebase.auth();
-    auth.signInAnonymously().catch(() => {});
+    
+    // Đăng nhập Ẩn danh mặc định nếu chưa đăng nhập Google
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        localStorage.setItem('qc_current_user_id', user.uid);
+        if (window.Storage) {
+          await Storage.put('users', {
+            id: user.uid,
+            name: user.displayName || 'Khách (Online)',
+            avatar: user.photoURL || '',
+            color: '#10b981',
+            type: 'self'
+          });
+        }
+      } else {
+        auth.signInAnonymously().catch(() => {});
+      }
+    });
+
     console.log('🔥 Firebase Bridge đã kết nối tới dự án quickchat-2-71087 thành công!');
   } else {
     console.error('❌ Thư viện Firebase chưa được tải!');
@@ -54,8 +72,10 @@ const FirebaseBridge = {
     const res = await auth.signInWithPopup(provider);
     const user = res.user;
 
+    localStorage.setItem('qc_current_user_id', user.uid);
+
     const userDocRef = db.collection('users').doc(user.uid);
-    await userDocRef.set({
+    const userData = {
       id: user.uid,
       name: user.displayName || 'Google User',
       avatar: user.photoURL || '',
@@ -64,13 +84,19 @@ const FirebaseBridge = {
       status: 'online',
       statusText: 'Đã kết nối qua Google Cloud',
       createdAt: Date.now()
-    }, { merge: true });
+    };
+    
+    await userDocRef.set(userData, { merge: true });
+    if (window.Storage) {
+      await Storage.put('users', userData);
+    }
 
     return user;
   },
 
   async logout() {
     if (!auth) return;
+    localStorage.removeItem('qc_current_user_id');
     return auth.signOut();
   },
 

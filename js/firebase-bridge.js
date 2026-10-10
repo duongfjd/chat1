@@ -10,6 +10,7 @@ import {
   getAuth, 
   GoogleAuthProvider, 
   signInWithPopup, 
+  signInAnonymously,
   signOut as fbSignOut, 
   onAuthStateChanged 
 } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
@@ -42,6 +43,7 @@ try {
   app = initializeApp(firebaseConfig);
   db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
   auth = getAuth(app);
+  signInAnonymously(auth).catch(() => {});
   console.log('🔥 Firebase Bridge đã khởi tạo thành công!');
 } catch (err) {
   console.error('❌ Lỗi khởi tạo Firebase:', err);
@@ -207,6 +209,31 @@ const FirebaseBridge = {
     } catch (err) {
       console.error('Lỗi khởi tạo query Todos Cloud:', err);
       return null;
+    }
+  },
+
+  async syncAllLocalToCloud() {
+    if (!db || !window.Storage) return;
+    try {
+      const chats = await Storage.getAll('chats');
+      for (const c of chats) {
+        await this.sendCloudChat(c);
+      }
+      const messages = await Storage.getAll('messages');
+      for (const m of messages) {
+        await this.sendCloudMessage(m);
+      }
+      const links = await Storage.getAll('links');
+      for (const l of links) {
+        await this.sendCloudLink(l);
+      }
+      const todos = await Storage.getAll('todos');
+      for (const t of todos) {
+        await this.sendCloudTodo(t);
+      }
+      console.log('✨ Đã đồng bộ toàn bộ dữ liệu cục bộ lên Firestore Cloud!');
+    } catch (err) {
+      console.error('Lỗi đẩy dữ liệu lên Firestore:', err);
     }
   }
 };

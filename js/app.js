@@ -614,6 +614,8 @@ const App = (() => {
                 await Storage.put('chats', c);
               }
               await this.renderSidebarChatList();
+            } else if (typeof window.FirebaseBridge.syncAllLocalToCloud === 'function') {
+              await window.FirebaseBridge.syncAllLocalToCloud();
             }
           });
         }
@@ -630,18 +632,16 @@ const App = (() => {
                   hasNew = true;
                 }
               }
-              if (hasNew) {
-                const activeChat = Chat.getActiveChat();
-                if (activeChat) {
-                  await Chat.renderMessages();
-                } else {
-                  const chats = await Storage.getAll('chats');
-                  if (chats.length > 0) {
-                    Chat.openConversation(chats[0].id);
-                  }
+              const activeChat = Chat.getActiveChat();
+              if (activeChat) {
+                await Chat.renderMessages();
+              } else {
+                const chats = await Storage.getAll('chats');
+                if (chats.length > 0) {
+                  Chat.openConversation(chats[0].id);
                 }
-                await this.renderSidebarChatList();
               }
+              await this.renderSidebarChatList();
             }
           });
         }

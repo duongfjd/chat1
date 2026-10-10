@@ -100,6 +100,9 @@ const FirebaseBridge = {
       await setDoc(msgRef, payload, { merge: true });
     } catch (err) {
       console.error('Lỗi gửi tin nhắn Cloud:', err);
+      if (window.UI && typeof window.UI.toast === 'function' && err && err.code === 'permission-denied') {
+        window.UI.toast('🔒 Vui lòng vào tab Rules trên Firebase Console mở allow read, write!', 'error');
+      }
     }
   },
 
@@ -110,6 +113,9 @@ const FirebaseBridge = {
       await setDoc(chatRef, chat, { merge: true });
     } catch (err) {
       console.error('Lỗi gửi chat Cloud:', err);
+      if (window.UI && typeof window.UI.toast === 'function' && err && err.code === 'permission-denied') {
+        window.UI.toast('🔒 Vui lòng vào tab Rules trên Firebase Console mở allow read, write!', 'error');
+      }
     }
   },
 

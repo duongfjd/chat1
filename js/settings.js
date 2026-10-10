@@ -91,7 +91,10 @@ const Settings = (() => {
               Dự án <strong>quickchat-2-71087</strong> đã kích hoạt Firestore. Tự động đồng bộ tin nhắn đám mây thời gian thực xuyên tất cả thiết bị.
             </p>
             <div id="firebase-auth-section" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-              <button class="btn btn-primary fb-login-btn" style="display: flex; align-items: center; gap: 8px;">
+              <button class="btn btn-primary push-cloud-btn" style="display: flex; align-items: center; gap: 8px;">
+                <span>⚡ Khởi tạo & Đẩy dữ liệu lên Cloud Firestore</span>
+              </button>
+              <button class="btn btn-secondary fb-login-btn" style="display: flex; align-items: center; gap: 8px;">
                 <span>🔐 Đăng nhập tài khoản Google</span>
               </button>
             </div>
@@ -222,6 +225,17 @@ const Settings = (() => {
             this.renderSettingsView(container, onProfileChanged);
           });
         } else {
+          const btnPush = authSection.querySelector('.push-cloud-btn');
+          if (btnPush) {
+            btnPush.addEventListener('click', async () => {
+              if (window.FirebaseBridge && typeof window.FirebaseBridge.syncAllLocalToCloud === 'function') {
+                UI.toast('Đang đẩy dữ liệu lên Cloud Firestore...', 'info');
+                await window.FirebaseBridge.syncAllLocalToCloud();
+                UI.toast('Đã hoàn tất đẩy dữ liệu lên Cloud!', 'success');
+              }
+            });
+          }
+
           const btnLogin = authSection.querySelector('.fb-login-btn');
           if (btnLogin) {
             btnLogin.addEventListener('click', async () => {
